@@ -9,10 +9,14 @@ extended.
 Works over the **cable** and the **2.4G dongle**, on Linux and Windows, in Chrome or Edge
 (WebHID). Runs offline once installed. Nothing is sent anywhere.
 
-> **Status:** Stage 1 (read everything) is complete and verified on hardware. Stage 2 (writes) is
-> in progress: brightness, speed, effect, Color Mixing, effect colour and per-key colour all work
-> over the cable; over the dongle only the profile block is writable so far. Key remapping and
-> macros are not yet written.
+> **Status:** Stage 1 (read everything) is complete and verified on hardware. Stage 2 (writes)
+> works over the **cable**: brightness, speed, effect, Color Mixing, effect colour, per-key colour,
+> sleep timer, and full backup/restore. **The 2.4G dongle is read-only** — its write path
+> corrupted the colour blocks on hardware twice and is disabled until the cause is understood.
+> Key remapping and macros are not yet written.
+
+**Live app:** <https://kia-salvati.github.io/GravaStar-Mercury-K1-PRO/> — open in Chrome or Edge,
+click Install for a standalone window that then runs offline.
 
 ## What it shows and does
 
@@ -20,14 +24,17 @@ Works over the **cable** and the **2.4G dongle**, on Linux and Windows, in Chrom
 |---|---|---|---|
 | Battery %, charging, full | dongle only — the cable never reports it | — | — |
 | Connection type, firmware | ✓ | — | — |
-| Lighting effect (13), brightness 0–4, speed 0–4, Color Mixing | ✓ | ✓ | ✓ |
-| Effect colour (24-bit RGB) | ✓ | ✓ | not captured yet |
-| Per-key colour (Custom effect, 126 slots) | ✓ | ✓ | not captured yet |
+| Lighting effect (13), brightness 0–4, speed 0–4, Color Mixing | ✓ | ✓ | disabled |
+| Effect colour (24-bit RGB) | ✓ | ✓ | disabled |
+| Per-key colour (Custom effect, 126 slots) | ✓ | ✓ | disabled |
+| Sleep timer (0.5–20 min) | dongle | ✓ | disabled |
 | Keymap, 3 layers | ✓ | — | — |
 | Macros (raw, 512-byte block) | ✓ | — | — |
 
 Brightness is **four stages** — that is the firmware's real range. Writing 20 reset the keyboard;
-the library refuses anything above the model's declared stages.
+the library refuses anything above the model's declared stages. Every write is followed by a
+500 ms settle so the keyboard can commit flash — the vendor app never follows a write faster, and
+doing so left the keyboard lit but not typing.
 
 ## Layout
 

@@ -1,4 +1,4 @@
-export { K916, KeyboardBusyError, type Backup, type ConnectOptions, type DeviceInfo } from './device.js'
+export { K916, KeyboardBusyError, WritesDisabledError, type Backup, type ConnectOptions, type DeviceInfo, type RestoreStep } from './device.js'
 export { buildFrame, checksum, FRAME_BODY_BYTES, FRAME_BYTES, type Bytes } from './frame.js'
 export { bytesOf, parseCapture, toHex, type CaptureDirection, type CaptureEvent, type Transport } from './transport/transport.js'
 export { MockTransport } from './transport/mock.js'

@@ -1,7 +1,11 @@
 // Caches the app shell only. There is no offline data: without a keyboard attached the app has
 // nothing to show, so pretending otherwise would be dishonest.
-const SHELL_CACHE = 'k1-shell-v1'
-const SHELL = ['/', '/manifest.webmanifest', '/icon.svg', '/icon-192.png', '/icon-512.png']
+//
+// Every path is relative to the worker's own scope, so the same file works at the site root and
+// under a sub-path such as GitHub Pages' /<repo>/.
+const SHELL_CACHE = 'k1-shell-v2'
+const ROOT = new URL(self.registration.scope).pathname   // '/' or '/<repo>/'
+const SHELL = ['', 'manifest.webmanifest', 'icon.svg', 'icon-192.png', 'icon-512.png'].map((file) => ROOT + file)
 
 const fetchAndStore = async (cache, request) => {
   const response = await fetch(request)
@@ -27,7 +31,7 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET' || url.origin !== self.location.origin) return
 
   // Hashed build assets never change under their name, so the cached copy is always right.
-  if (url.pathname.startsWith('/assets/')) {
+  if (url.pathname.startsWith(ROOT + 'assets/')) {
     event.respondWith(caches.open(SHELL_CACHE).then(async (cache) => (await cache.match(request)) ?? fetchAndStore(cache, request)))
     return
   }
@@ -38,7 +42,7 @@ self.addEventListener('fetch', (event) => {
         try {
           return await fetchAndStore(cache, request)
         } catch {
-          return (await cache.match(request)) ?? (await cache.match('/')) ?? Response.error()
+          return (await cache.match(request)) ?? (await cache.match(ROOT)) ?? Response.error()
         }
       }),
     )

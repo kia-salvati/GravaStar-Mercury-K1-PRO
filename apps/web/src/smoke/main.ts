@@ -67,6 +67,9 @@ buttons.connect.onclick = () =>
     kb = await K916.connect(transport)
     print(`  ${kb.info.productName} · fw ${kb.info.firmwareVersion} · ${kb.info.connection}`)
     print(`  lighting now: ${describe(await kb.readProfileRaw())}`)
+    if (!kb.canWrite) {
+      print('  writes over 2.4G are DISABLED — they corrupted the colour blocks twice on hardware. Reads work; connect the cable to write.', 'err')
+    }
   }, buttons.backup)
 
 buttons.backup.onclick = () =>

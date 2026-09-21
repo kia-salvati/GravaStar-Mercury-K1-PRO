@@ -19,7 +19,7 @@ const NO_ACTIONS = {
   setKeyColour: async () => undefined,
   setSleepTimer: async () => {},
   backup: async () => undefined,
-  restore: async () => {},
+  restore: async () => false,
 }
 
 const onCable: Keyboard = {

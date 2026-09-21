@@ -1,4 +1,4 @@
-import type { Backup, Capabilities, DeviceInfo, LightingChange, LightingState, PowerState, RGB, SleepTimer } from 'k916'
+import type { Backup, Capabilities, DeviceInfo, LightingChange, LightingState, PowerState, RestoreStep, RGB, SleepTimer } from 'k916'
 
 export interface Disconnected {
   /** `unsupported`: this browser has no WebHID. `idle`: waiting for the connect button. */
@@ -47,7 +47,8 @@ interface KeyboardActions {
   /** Null switches the timer off. */
   setSleepTimer(minutes: number | null): Promise<void>
   backup(): Promise<Backup | undefined>
-  restore(backup: Backup): Promise<void>
+  /** Writes all three blocks back; `onProgress` gets two steps per block. Resolves true once the keyboard confirmed them all. */
+  restore(backup: Backup, onProgress?: (step: RestoreStep) => void): Promise<boolean>
 }
 
 export type Keyboard = KeyboardState & KeyboardProgress & KeyboardActions

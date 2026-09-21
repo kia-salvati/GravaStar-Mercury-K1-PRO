@@ -225,7 +225,7 @@ test('setEffectColour and setKeyColour work over the dongle on the simulator', a
   const transport = new MockTransport(DONGLE_COLOUR, DONGLE)
   // The capture's first two 0x49 requests are followed only by stale 0x42 packets from an
   // earlier read — the real link interleaves — so this exercises the silent-attempt retry.
-  const kb = await K916.connect(transport, { burstIdleMs: 5, ackTimeoutMs: 5, timeoutMs: 20, writeSettleMs: 0 })
+  const kb = await K916.connect(transport, { burstIdleMs: 5, ackTimeoutMs: 5, timeoutMs: 20, writeSettleMs: 0, allowWirelessWrites: true })
 
   await expect(kb.setEffectColour({ r: 0x12, g: 0x34, b: 0x56 }, 1)).resolves.toEqual({ r: 0x12, g: 0x34, b: 0x56 })
   await expect(kb.setKeyColour(35, { r: 9, g: 8, b: 7 })).resolves.toEqual({ r: 9, g: 8, b: 7 })
@@ -235,4 +235,15 @@ test('setEffectColour and setKeyColour work over the dongle on the simulator', a
 
 test('a payload longer than the dongle wire length is refused', () => {
   expect(() => new WirelessDialect().writeFrames(WriteCommand.CustomColor, new Uint8Array(507))).toThrow(/maximum 506/)
+})
+
+test('restore reports each block as it is written and verified, in order', async () => {
+  const transport = new MockTransport(COLOUR)
+  const kb = await K916.connect(transport, { writeSettleMs: 0 })
+  const backup = await kb.backup()
+  const seen: string[] = []
+
+  await kb.restore(backup, (step) => seen.push(`${step.block}:${step.state}`))
+
+  expect(seen).toEqual(['profile:writing', 'profile:verified', 'lightColour:writing', 'lightColour:verified', 'customColour:writing', 'customColour:verified'])
 })

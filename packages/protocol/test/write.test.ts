@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
 import { applyLighting, decodeLighting } from '../src/codec/lighting.js'
-import { K916, KeyboardBusyError } from '../src/device.js'
+import { K916, KeyboardBusyError, WritesDisabledError } from '../src/device.js'
 import { WriteCommand, type ReplyPacket } from '../src/dialect/dialect.js'
 import { WiredDialect } from '../src/dialect/wired.js'
 import { WirelessDialect } from '../src/dialect/wireless.js'
@@ -12,7 +12,7 @@ import { bytesOf, parseCapture } from '../src/transport/transport.js'
 const CONNECT = readFileSync('test/fixtures/session-1-connect.jsonl', 'utf8')
 const LIGHTING = readFileSync('test/fixtures/session-2-lighting.jsonl', 'utf8')
 const DONGLE = { vendorId: 0x3554, productId: 0xfa09 }
-const FAST = { burstIdleMs: 5, ackTimeoutMs: 5, writeSettleMs: 0 }
+const FAST = { burstIdleMs: 5, ackTimeoutMs: 5, writeSettleMs: 0, allowWirelessWrites: true }
 const K1 = modelForUuid(K1_PRO_UUID)!.capabilities.lighting
 const hex = (b: Uint8Array) => [...b].map((x) => x.toString(16).padStart(2, '0')).join(' ')
 
@@ -342,4 +342,29 @@ test('over the cable a single passing read is trusted', async () => {
 
   await kb.setLighting({ brightness: 2 })
   expect(reads).toHaveLength(2)   // one base read, one read-back
+})
+
+// ---- the dongle is read-only by default -------------------------------------------------------------
+
+test('writes over the dongle are refused by default, before any frame exists', async () => {
+  const transport = new MockTransport(CAPTURE, DONGLE)
+  const kb = await K916.connect(transport, { burstIdleMs: 5, writeSettleMs: 0 })   // no opt-in
+
+  expect(kb.canWrite).toBe(false)
+  await expect(kb.setLighting({ brightness: 2 })).rejects.toBeInstanceOf(WritesDisabledError)
+  await expect(kb.setLighting({ brightness: 2 })).rejects.toThrow(/writes over 2\.4G are disabled/)
+  await expect(kb.writeProfile(new Uint8Array(128))).rejects.toBeInstanceOf(WritesDisabledError)
+  expect(transport.writes).toHaveLength(0)
+  expect(kb.busy).toBe(false)
+})
+
+test('reads over the dongle are unaffected by the write gate', async () => {
+  const kb = await K916.connect(new MockTransport(CAPTURE, DONGLE), { burstIdleMs: 5 })
+  await expect(kb.readLighting()).resolves.toMatchObject({ effect: 'Windmill' })
+})
+
+test('the cable can write without any opt-in', async () => {
+  const kb = await K916.connect(new MockTransport(WIRED_WRITES), { writeSettleMs: 0 })
+  expect(kb.canWrite).toBe(true)
+  await expect(kb.setLighting({ brightness: 2 })).resolves.toMatchObject({ brightness: 2 })
 })

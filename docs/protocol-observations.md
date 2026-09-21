@@ -34,6 +34,22 @@ Fixes in `K916`:
   the lossy link can merge stale and fresh packets into a block the keyboard never held.
 - `backup()` uses the same trusted reads; `writeProfile()` validates its input.
 
+## Incident 2 — dongle colour writes corrupted the colour blocks (2026-09-21) — *hardware*
+
+After the pacing, block validation and double-read fixes were in place, colour writes over the
+**2.4G dongle** still left the lighting corrupted (the keyboard kept typing this time). A factory
+reset over the cable was needed again. Cause **not yet understood**. Candidates, none proven:
+the echo is not a commit acknowledgement; the keyboard applies partial bursts; a re-sent
+packet (same index) is treated as new data rather than a retransmission; the read-back over the
+lossy link merged a stale packet and passed by luck. The cable path has had no incident since
+the pacing fix.
+
+**Decision: the dongle is read-only.** `K916` refuses every write over a wireless connection
+with `WritesDisabledError` unless `allowWirelessWrites: true` is passed — which only the test
+suite does, against the simulator. The captured dongle write frames and their golden tests
+stay, so the path can be studied without being used. Reads over the dongle (battery, lighting,
+keymap, backups) are unaffected.
+
 ## Capture session 6 — colour, cable, 2026-09-21 — *capture*
 
 Fixture: `packages/protocol/test/fixtures/session-6-colour.jsonl` (151 frames). Eight swatch

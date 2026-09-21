@@ -58,7 +58,31 @@ export interface Backup {
   customColour: Uint8Array
 }
 
+/** Progress of a restore, one event as each block starts and one as its read-back confirms it. */
+export interface RestoreStep {
+  block: keyof Backup
+  state: 'writing' | 'verified'
+}
+
+/**
+ * Thrown when a write is requested over a connection whose write path is disabled. Writes over
+ * the 2.4G dongle corrupted the colour blocks on hardware twice (2026-09-21) — the second time
+ * after pacing, block validation and double-read were in place — and each needed a factory
+ * reset over the cable. Until the cause is understood, the dongle is read-only.
+ */
+export class WritesDisabledError extends Error {
+  constructor(connection: ConnectionType, operation: string) {
+    super(`writes over ${connection === 'wireless' ? '2.4G' : connection} are disabled; ${operation} was not started — connect the cable`)
+    this.name = 'WritesDisabledError'
+  }
+}
+
 export interface ConnectOptions {
+  /**
+   * Opt in to writing over the 2.4G dongle. Off by default — see WritesDisabledError. Tests use
+   * it to exercise the captured wireless write path against the simulator.
+   */
+  allowWirelessWrites?: boolean
   /**
    * How long to wait for the first packet of a reply before treating the request as lost and
    * re-sending. Real replies land within ~20 ms; a long wait here is what made lost requests
@@ -117,6 +141,7 @@ export class K916 {
   readonly #ackTimeoutMs: number
   readonly #settleMs: number
   readonly #writeSettleMs: number
+  readonly #allowWirelessWrites: boolean
   readonly #onFrameError: (error: Error) => void
   /** Operations run one at a time: two overlapping exchanges on one link steal each other's packets. */
   #queue: Promise<unknown> = Promise.resolve()
@@ -138,6 +163,7 @@ export class K916 {
     this.#ackTimeoutMs = options.ackTimeoutMs ?? 150
     this.#settleMs = options.settleMs ?? 40
     this.#writeSettleMs = options.writeSettleMs ?? 500
+    this.#allowWirelessWrites = options.allowWirelessWrites ?? false
     this.#onFrameError = options.onFrameError ?? ((error) => console.warn('[k916] unparseable frame:', error.message))
     this.#unsubscribeAmbient = transport.onInputReport((reportId, data) => this.#onAmbientFrame(reportId, data))
   }
@@ -273,11 +299,18 @@ export class K916 {
   }
 
   /** Writes all three blocks back verbatim and confirms each by read-back. */
-  restore(backup: Backup): Promise<void> {
+  restore(backup: Backup, onProgress?: (step: RestoreStep) => void): Promise<void> {
     return this.#exclusiveWrite('restore', async () => {
-      await this.#modify(Command.Profile, WriteCommand.Profile, () => backup.profile)
-      await this.#modify(Command.LightColor, WriteCommand.LightColor, () => lightColourWriteBlock(backup.lightColour))
-      await this.#modify(Command.CustomColor, WriteCommand.CustomColor, () => Uint8Array.from(backup.customColour))
+      const steps: [RestoreStep['block'], () => Promise<unknown>][] = [
+        ['profile', () => this.#modify(Command.Profile, WriteCommand.Profile, () => backup.profile)],
+        ['lightColour', () => this.#modify(Command.LightColor, WriteCommand.LightColor, () => lightColourWriteBlock(backup.lightColour))],
+        ['customColour', () => this.#modify(Command.CustomColor, WriteCommand.CustomColor, () => Uint8Array.from(backup.customColour))],
+      ]
+      for (const [block, write] of steps) {
+        onProgress?.({ block, state: 'writing' })
+        await write()
+        onProgress?.({ block, state: 'verified' })
+      }
     })
   }
 
@@ -307,6 +340,11 @@ export class K916 {
     return this.#pending > 0
   }
 
+  /** Whether this connection may write at all. False on the dongle unless explicitly allowed. */
+  get canWrite(): boolean {
+    return this.#connection !== 'wireless' || this.#allowWirelessWrites
+  }
+
   /**
    * Reads queue behind whatever is in flight, up to a cap. A failure does not block the next one.
    */
@@ -322,6 +360,7 @@ export class K916 {
    * nothing is sent. The click after the current operation answers is the one that goes through.
    */
   #exclusiveWrite<T>(name: string, operation: () => Promise<T>): Promise<T> {
+    if (!this.canWrite) return Promise.reject(new WritesDisabledError(this.#connection, name))
     if (this.#pending > 0) return Promise.reject(new KeyboardBusyError(name))
     return this.#enqueue(operation)
   }

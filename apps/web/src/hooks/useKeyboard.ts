@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { K916, KeyboardBusyError, type Backup, type LightingChange, type RGB, type Transport } from 'k916'
+import { K916, KeyboardBusyError, type Backup, type LightingChange, type RestoreStep, type RGB, type Transport } from 'k916'
 import type { DeviceSource } from '../api/hidSource'
 import type { Connected, Keyboard, KeyboardState } from '../types/keyboard'
 
@@ -171,15 +171,16 @@ export function useKeyboard(source: DeviceSource): Keyboard {
   const backup = useCallback(() => perform('Backup', (kb) => kb.backup()), [perform])
 
   const restore = useCallback(
-    async (saved: Backup) => {
-      await perform(
+    async (saved: Backup, onProgress?: (step: RestoreStep) => void) => {
+      const readings = await perform(
         'Restore',
         async (kb) => {
-          await kb.restore(saved)
+          await kb.restore(saved, onProgress)
           return readReadings(kb)
         },
         merge,
       )
+      return readings !== undefined
     },
     [perform],
   )
