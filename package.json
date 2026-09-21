@@ -1,0 +1,10 @@
+{
+  "name": "keyboard-config",
+  "private": true,
+  "type": "module",
+  "workspaces": ["packages/*", "apps/*"],
+  "scripts": {
+    "test": "npm run test --workspace=k916",
+    "build": "npm run build --workspace=k916"
+  }
+}

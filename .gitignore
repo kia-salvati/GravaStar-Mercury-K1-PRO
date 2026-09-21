@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.superpowers/
+*.log
+
+# The vendor's JS bundles and their deobfuscated/pretty-printed forms are GravaStar's code, not
+# ours. They are downloaded on demand (see research/FINDINGS.md) and never committed.
+research/*.js
+!research/deobfuscate.mjs
+!research/extract-keycodes.mjs
+research/keycode-tables.json
