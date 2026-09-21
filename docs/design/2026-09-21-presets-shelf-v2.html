@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-field="ambient">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>K1 PRO — Presets shelf v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&display=swap" rel="stylesheet">
+<style>
+/* ---------- tokens: verbatim from apps/web/src/styles/tokens.css ---------- */
+:root{--radius:12px;--ok:#8fd694;--bad:#ff8a7a;--frame-w:480px}
+:root[data-theme="white"]{--bg:#eceef2;--text:#17191d;--text-2:#4b5160;--accent:#8f4a00;--accent-ink:#fff7ec;--accent-soft:rgba(143,74,0,.14);--ok:#1d6a2f;--bad:#a83220;--hair:rgba(23,25,29,.14);--edge:rgba(255,255,255,.85);--edge-lo:rgba(23,25,29,.10);--edge-hi:rgba(255,255,255,.95);--shadow:rgba(23,25,29,.10);--glass-frost:rgba(255,255,255,.60);--cap:.34;--static-a:#f6f7fa;--static-b:#d9dee8;--grain:.05;--page-bg:#dfe2e8;--page-text:#17191d;--page-text-2:#4b5160}
+:root[data-theme="dark"]{--bg:#1a1c20;--text:#eceef2;--text-2:#bbc0ca;--accent:#f5b043;--accent-ink:#1a1206;--accent-soft:rgba(245,176,67,.16);--hair:rgba(255,255,255,.10);--edge:rgba(255,255,255,.14);--edge-lo:rgba(255,255,255,.06);--edge-hi:rgba(255,255,255,.18);--shadow:rgba(0,0,0,.35);--glass-frost:rgba(255,255,255,.06);--cap:.14;--static-a:#24262c;--static-b:#141518;--grain:.06;--page-bg:#101114;--page-text:#e6e8ec;--page-text-2:#a9aeb8}
+:root[data-theme="black"]{--bg:#000000;--text:#f2f2f2;--text-2:#b9bcc4;--accent:#f5b043;--accent-ink:#1a1206;--accent-soft:rgba(245,176,67,.18);--hair:rgba(255,255,255,.12);--edge:rgba(255,255,255,.18);--edge-lo:rgba(255,255,255,.07);--edge-hi:rgba(255,255,255,.26);--shadow:rgba(0,0,0,.6);--glass-frost:rgba(255,255,255,.05);--cap:.26;--static-a:#0b0b0d;--static-b:#000000;--grain:.08;--page-bg:#141414;--page-text:#ececec;--page-text-2:#a9acb3}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page-bg);color:var(--page-text);font-family:"Archivo",system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:15px;line-height:1.45}
+button,input{font:inherit;color:inherit}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
+p{margin:0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
+
+/* ---------- page chrome ---------- */
+.page-head{padding:28px 24px 12px;max-width:1380px;margin:0 auto}
+.page-head h1{font-size:26px;font-stretch:88%;font-weight:700}
+.page-head .sub{color:var(--page-text-2);max-width:76ch;margin-top:6px}
+.controls{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--hair)}
+.ctl-group{display:flex;align-items:center;gap:8px}
+.ctl-group .k{font-stretch:75%;text-transform:uppercase;letter-spacing:.09em;font-size:12px;color:var(--page-text-2);margin-right:2px}
+.pseg{display:inline-flex;border:1px solid var(--hair);border-radius:8px;overflow:hidden;background:var(--bg)}
+.pseg button{background:none;border:0;padding:7px 13px;cursor:pointer;color:var(--page-text-2);border-right:1px solid var(--hair)}
+.pseg button:last-child{border-right:0}
+.pseg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.pseg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.pseg .tag{display:inline-block;font-stretch:75%;letter-spacing:.06em;font-size:11px;margin-right:6px;opacity:.85}
+main{max-width:1380px;margin:0 auto;padding:14px 24px 40px}
+.opt{display:none;grid-template-columns:auto minmax(280px,1fr);gap:28px;align-items:start}
+.opt[data-active]{display:grid}
+@media (max-width:1000px){.opt{grid-template-columns:1fr}}
+.stage{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ruler{font-stretch:75%;letter-spacing:.08em;text-transform:uppercase;font-size:12px;color:var(--page-text-2)}
+.notes{padding-top:4px;max-width:66ch}
+.notes h2{font-size:20px;margin-bottom:2px;font-stretch:90%}
+.notes .idea{color:var(--page-text-2);font-size:15px;margin-bottom:14px}
+.notes h3{font-stretch:75%;text-transform:uppercase;letter-spacing:.1em;font-size:12px;color:var(--page-text-2);margin:16px 0 6px}
+.notes ul,.notes ol{margin:0;padding-left:18px}
+.notes li{margin:3px 0}
+.notes li b{font-weight:600}
+.tokens{max-width:1380px;margin:0 auto;padding:0 24px 60px}
+.tokens h2{font-size:18px;margin-bottom:8px}
+.tokens .sub{color:var(--page-text-2);max-width:78ch}
+.tokens table{border-collapse:collapse;font-size:14px}
+.tokens th,.tokens td{text-align:left;padding:5px 14px 5px 0;border-bottom:1px solid var(--hair);vertical-align:top}
+.tokens th{font-stretch:75%;text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--page-text-2);font-weight:500}
+.tokens .sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid var(--hair)}
+.tokens .fail{color:var(--bad);font-weight:600}
+.tokens .pass{color:var(--ok)}
+
+/* ---------- the window: apps/web app.css scoped to a frame ---------- */
+.frame{width:var(--frame-w);height:640px;position:relative;overflow:hidden;background:var(--bg);color:var(--text);border:1px solid var(--hair);border-radius:var(--radius);container-type:inline-size;container-name:frame;font-size:13.5px;line-height:1.45;isolation:isolate}
+.app{position:absolute;inset:0;display:flex;gap:10px;padding:10px}
+.field{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.field .amb{position:absolute;inset:0;opacity:calc(var(--cap) * var(--lvl));transition:opacity .3s}
+:root[data-field="static"] .field{background:linear-gradient(135deg,var(--static-a),var(--static-b))}
+:root[data-field="static"] .field .amb{display:none}
+:root[data-field="static"] .field::after{content:"";position:absolute;inset:0;opacity:var(--grain);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");background-size:160px}
+.fx-solid .amb{background:radial-gradient(60% 50% at 50% 12%,var(--c),transparent 70%)}
+.fx-reactive .amb{background:radial-gradient(45% 35% at 30% 75%,var(--c),transparent 70%),radial-gradient(35% 30% at 75% 25%,var(--c),transparent 70%)}
+.fx-wave .amb{background:linear-gradient(100deg,transparent 20%,var(--c) 45%,transparent 70%);background-size:220% 100%;animation:slide var(--dur) linear infinite}
+.fx-sine .amb{background:linear-gradient(100deg,transparent,var(--c) 25%,transparent 50%,var(--c) 75%,transparent);background-size:220% 100%;animation:slide var(--dur) ease-in-out infinite}
+.fx-stars .amb{background:radial-gradient(circle at 18% 30%,var(--c) 0 2%,transparent 9%),radial-gradient(circle at 63% 70%,var(--c) 0 2%,transparent 9%),radial-gradient(circle at 82% 22%,var(--c) 0 1.5%,transparent 8%),radial-gradient(circle at 40% 55%,var(--c) 0 1.5%,transparent 7%);animation:twinkle var(--dur) ease-in-out infinite}
+.fx-rainbow .amb{background:linear-gradient(100deg,#ff4d4d,#ffe14d,#4de07a,#3ee0e8,#4d7bff,#b56bff,#ff4d4d);background-size:300% 100%;animation:slide var(--dur) linear infinite}
+.fx-windmill .amb{inset:-60%;background:conic-gradient(from 0deg,#ff4d4d,#ffe14d,#4de07a,#3ee0e8,#4d7bff,#b56bff,#ff4d4d);animation:spin var(--dur) linear infinite;filter:blur(40px)}
+.fx-waterfall .amb{background:linear-gradient(180deg,#3ee0e8,#4d7bff,#b56bff,#3ee0e8);background-size:100% 300%;animation:fall var(--dur) linear infinite}
+.fx-bloom .amb{background:radial-gradient(45% 45% at 50% 50%,#ff9a2e,#b56bff 50%,transparent 75%);animation:bloom var(--dur) ease-in-out infinite}
+.fx-custom .amb{background:radial-gradient(50% 45% at 25% 30%,#3ee0e8,transparent 70%),radial-gradient(50% 45% at 78% 70%,#b56bff,transparent 70%)}
+.fx-off .amb{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slide{to{background-position:-300% 0}}
+@keyframes fall{to{background-position:0 -300%}}
+@keyframes twinkle{0%,100%{opacity:calc(var(--cap) * var(--lvl) * .5)}50%{opacity:calc(var(--cap) * var(--lvl))}}
+@keyframes bloom{0%,100%{transform:scale(.7)}50%{transform:scale(1.4)}}
+@media (prefers-reduced-motion:reduce){.amb{animation:none!important;transition:none}.drawer.open{animation:none}}
+
+.glass{position:relative;border-radius:var(--radius);border:1px solid var(--edge-lo);border-top-color:var(--edge);background:var(--glass-frost);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);box-shadow:inset 0 1px 0 var(--edge-hi),0 10px 30px -12px var(--shadow),0 0 60px -30px var(--c-glow,transparent)}
+.rail{width:60px;flex:none;display:flex;flex-direction:column;padding:10px 0;overflow:hidden}
+.glance{display:flex;flex-direction:column;gap:6px;padding:0 8px 10px;border-bottom:1px solid var(--hair)}
+.glance-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;font-size:11px;font-weight:600;text-align:center;color:var(--text-2)}
+.glance-item .t{display:none}
+.glance .ic{width:18px;height:18px;stroke-width:1.8}
+.nav{flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 8px}
+.nav .spacer{flex:1}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:8px;color:var(--text-2);font-size:10.5px;font-stretch:80%;text-decoration:none}
+.nav a[aria-current="page"]{background:var(--accent-soft);color:var(--text)}
+.nav a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.nav .ic{width:20px;height:20px;stroke-width:1.6}
+.ic{stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.panel{flex:1;min-width:0;overflow:auto;padding-top:6px;display:flex;flex-direction:column;position:relative}
+.panel-head{padding:0 6px 6px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.panel-head strong{font-size:17px;font-weight:600;display:block}
+.panel-head .fw{color:var(--text-2);font-size:12.5px}
+.card{padding:12px 14px;margin-bottom:10px;flex:none}
+.card h2{margin-bottom:8px}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.card-head h2{white-space:nowrap}
+.card-head h2{margin:0}
+.lbl{font-stretch:75%;text-transform:uppercase;letter-spacing:.09em;font-size:11px;color:var(--text-2);font-weight:500}
+.stmt{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.2;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.note{margin-top:8px;padding:8px 10px;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;font-size:13px;background:var(--accent-soft)}
+.note strong{display:block;font-size:14px}
+.note.muted{border-left-color:var(--text-2);background:transparent;color:var(--text-2);padding-left:10px}
+.help{margin-top:8px;color:var(--text-2)}
+.actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rows{display:grid;grid-template-columns:1fr;gap:2px 20px}
+.row{display:grid;grid-template-columns:88px 1fr;align-items:center;min-height:34px;gap:8px}
+.row .k{color:var(--text-2)}
+.row .v{display:flex;align-items:center;gap:8px;font-weight:600;flex-wrap:wrap}
+.dim{color:var(--text-2);font-weight:400}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.95em}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn.quiet{background:transparent;color:var(--text);border:1px solid var(--hair)}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid var(--hair)}
+.btn.sm{padding:5px 10px;font-size:12.5px}
+.btn.icon{padding:5px 7px;line-height:0}
+.btn.icon svg{width:16px;height:16px;stroke-width:2}
+.btn:focus-visible,.pcard:focus-visible,.gcard:focus-visible,.sq:focus-visible,.link:focus-visible,.name-input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.steps{display:inline-flex;align-items:center;gap:3px;vertical-align:middle}
+.steps i{display:block;width:10px;height:14px;border-radius:2px;border:1px solid var(--text-2)}
+.steps i.on{background:var(--accent);border-color:var(--accent)}
+.steps b{font-weight:600;margin-left:6px;font-size:.95em}
+.steps.sm i{width:6px;height:10px;border-radius:1.5px;gap:2px}
+.steps.sm b{margin-left:4px;font-size:11.5px}
+.steps.sm{gap:2px}
+.stagerow{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2)}
+.stagerow em{font-style:normal;width:9px;font-weight:600}
+.swatch{display:inline-block;width:18px;height:18px;border-radius:5px;border:1px solid var(--hair);vertical-align:middle;flex:none}
+.swatch.mix{background:conic-gradient(#ff4d4d,#ffe14d,#4de07a,#3ee0e8,#4d7bff,#b56bff,#ff4d4d)}
+.swatch.none{background:transparent;border-style:dashed}
+.swatch.lg{width:40px;height:40px;border-radius:9px}
+.swatch.md{width:30px;height:30px;border-radius:7px}
+.keygrid{display:inline-grid;grid-template-columns:repeat(14,1fr);gap:1px;padding:3px;border-radius:5px;border:1px solid var(--hair);background:rgba(0,0,0,.25);vertical-align:middle;flex:none}
+.keygrid i{display:block;width:4px;height:4px;border-radius:1px}
+.keygrid.lg i{width:6px;height:6px;border-radius:1.5px}
+.keygrid.fit{width:100%;max-width:84px}
+.keygrid.fit i{width:auto;height:auto;aspect-ratio:1}
+.keygrid.md{width:40px;padding:2px;gap:0}
+.keygrid.md i{width:auto;height:auto;aspect-ratio:1;border-radius:0}
+.name-input{background:transparent;border:0;border-bottom:1px solid var(--accent);padding:2px 0;min-width:0;width:100%;max-width:100%;font-weight:600;outline:none}
+.count{font-weight:600;color:var(--text-2);font-size:12.5px}
+.count.full{color:var(--text)}
+.link{background:none;border:0;padding:0;color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.badge{display:inline-block;font-size:10.5px;font-weight:600;padding:1px 6px;border-radius:5px;background:var(--accent);color:var(--accent-ink);font-stretch:85%}
+.badge.soft{background:var(--accent-soft);color:var(--text)}
+.mode-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;padding:7px 10px;border-radius:8px;background:var(--accent-soft);font-size:13px}
+.card.future{border-style:dashed;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;color:var(--text-2)}
+.card.future .stmt{font-size:15px;color:var(--text)}
+
+/* sheets and toasts */
+.sheet-wrap{position:absolute;inset:0;background:color-mix(in srgb,var(--bg) 55%,transparent);z-index:20;display:flex;align-items:flex-end;justify-content:center;padding:12px}
+.sheet{background:var(--bg);border:1px solid var(--edge-lo);border-top-color:var(--edge);border-radius:12px;width:min(100%,420px);max-height:100%;overflow:auto;box-shadow:0 18px 40px var(--shadow);padding:14px 16px}
+.sheet h2{font-size:16px;margin-bottom:6px}
+.sheet .body{color:var(--text-2);font-size:13px}
+.sheet .body strong{color:var(--text)}
+.sheet ul.check{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.sheet ul.check li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--hair);border-radius:8px}
+.sheet ul.check li .ok{color:var(--ok);font-weight:600}
+.sheet ul.check li .pend{color:var(--text-2)}
+.toast{position:absolute;left:12px;right:12px;bottom:12px;z-index:21;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--edge-lo);border-top-color:var(--edge);box-shadow:0 12px 30px var(--shadow);font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+
+/* ---------- shelf (v1.1) ---------- */
+.shelf-wrap{position:relative}
+.shelf{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 8px;margin:0 -2px;scrollbar-width:thin;outline:none}
+.shelf::-webkit-scrollbar{height:6px}
+.shelf::-webkit-scrollbar-thumb{background:var(--hair);border-radius:3px}
+.shelf-nav{display:flex;gap:4px}
+.pcard{flex:none;width:104px;border:1px solid var(--hair);border-radius:10px;padding:8px;background:transparent;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:5px;color:var(--text);position:relative;min-width:0}
+.pcard:hover{background:var(--accent-soft)}
+.pcard[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.pcard .nm{font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.pcard .fx{font-size:11.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard .big{align-self:center}
+.pcard .badge{position:absolute;top:6px;right:6px}
+.pcard.cur .badge{background:var(--accent-soft);color:var(--text)}
+.pcard.add{border-style:dashed;justify-content:center;align-items:center;text-align:center;color:var(--text-2);gap:4px}
+.pcard.add .plus{font-size:22px;line-height:1;color:var(--accent)}
+.pcard.add.full{border-style:solid;color:var(--text)}
+.pcard.add.full .plus{display:none}
+.pcard.add small{font-size:11px;line-height:1.25}
+.detail{min-height:196px;display:flex;flex-direction:column}
+.detail .placeholder{color:var(--text-2);flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px}
+.detail-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.detail-head .nm{font-size:16px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.detail-head .dt{color:var(--text-2);font-size:12px;white-space:nowrap}
+@container frame (min-width:700px){
+  .shelf{flex-wrap:wrap;overflow:visible}
+  .shelf-nav{display:none}
+}
+
+/* ---------- design A: live preview ---------- */
+.kb{width:100%;display:block;border-radius:8px}
+@container frame (min-width:700px){.kb{max-width:520px;margin:0 auto}}
+.kb .plate{fill:var(--bg);stroke:var(--hair)}
+.kb .key{stroke:var(--hair);stroke-width:.6;fill:var(--hair)}
+.preview-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.preview-head .nm{font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.preview-head .state{font-size:11.5px;color:var(--text-2);white-space:nowrap}
+.preview-head .state.live{color:var(--accent);font-weight:600}
+.readline{display:flex;gap:10px 14px;flex-wrap:wrap;align-items:center;font-size:12.5px;margin-top:8px}
+.readline .k{color:var(--text-2)}
+
+/* ---------- design B: wrapping grid + drawer ---------- */
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.gcard{border:1px solid var(--hair);border-radius:9px;padding:7px 6px 6px;background:transparent;color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0;position:relative;text-align:center}
+.gcard:hover{background:var(--accent-soft)}
+.gcard[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.gcard .nm{font-size:11.5px;font-weight:600;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gcard .st{display:flex;flex-direction:column;gap:2px;align-items:flex-start}
+.gcard.add{border-style:dashed;color:var(--text-2);justify-content:center}
+.gcard.add .plus{font-size:20px;line-height:1;color:var(--accent)}
+.gcard.add.full{border-style:solid;color:var(--text)}
+.gcard.add small{font-size:10.5px;line-height:1.2}
+.gcard .badge{position:absolute;top:4px;right:4px}
+.drawer{display:none;position:absolute;left:0;right:0;bottom:0;z-index:10;max-height:75%;overflow:auto;padding:12px 14px;border-bottom-left-radius:0;border-bottom-right-radius:0;box-shadow:0 -12px 30px -10px var(--shadow)}
+.drawer.open{display:block;animation:drawerIn .22s ease}
+@keyframes drawerIn{from{transform:translateY(100%)}to{transform:none}}
+.drawer .grip{width:36px;height:4px;border-radius:2px;background:var(--hair);margin:-4px auto 8px}
+.drawer-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.drawer-head .nm{font-size:16px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.scrim{position:absolute;inset:0;z-index:9;background:color-mix(in srgb,var(--bg) 35%,transparent)}
+@container frame (min-width:700px){.grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+
+/* ---------- design C: swatch rail ---------- */
+.C-body{display:flex;gap:10px;flex:1;min-height:0}
+.sqrail{width:48px;flex:none;display:flex;flex-direction:column;gap:5px;padding:6px 5px;align-self:flex-start;max-height:100%;overflow:auto;scrollbar-width:none}
+.sqrail::-webkit-scrollbar{display:none}
+.sq{width:38px;height:38px;border-radius:9px;border:1px solid var(--hair);background:transparent;padding:0;cursor:pointer;display:flex;align-items:center;justify-content:center;position:relative;color:var(--text);flex:none}
+.sq:hover{background:var(--accent-soft)}
+.sq[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.sq .swatch{width:26px;height:26px;border-radius:6px}
+.sq .keygrid.md{width:30px}
+.sq.add{border-style:dashed;color:var(--accent);font-size:20px;line-height:1}
+.sq.add.full{border-style:solid;color:var(--text);font-size:10px;font-weight:600;font-stretch:80%;line-height:1.1}
+.sq .tip{display:none;position:absolute;left:44px;top:50%;transform:translateY(-50%);background:var(--bg);border:1px solid var(--edge-lo);border-top-color:var(--edge);border-radius:7px;padding:4px 8px;font-size:12px;font-weight:600;white-space:nowrap;z-index:8;box-shadow:0 8px 20px var(--shadow)}
+.sq:hover .tip,.sq:focus-visible .tip{display:block}
+.sq .cur{position:absolute;right:-2px;top:-2px;width:9px;height:9px;border-radius:50%;background:var(--accent);border:2px solid var(--bg)}
+.sq .lbl-n{display:none;font-size:10px;font-weight:600;color:var(--text-2);font-stretch:80%}
+.C-main{flex:1;min-width:0;display:flex;flex-direction:column}
+.C-count{font-size:10.5px;color:var(--text-2);text-align:center;font-weight:600;font-stretch:80%}
+@container frame (min-width:700px){
+  .sqrail{width:170px;gap:4px}
+  .sq{width:100%;height:38px;justify-content:flex-start;gap:8px;padding:0 6px}
+  .sq .tip{display:block;position:static;transform:none;background:none;border:0;box-shadow:0 0 0 transparent;padding:0;overflow:hidden;text-overflow:ellipsis}
+  .sq .lbl-n{display:block;margin-left:auto}
+}
+</style>
+</head>
+<body>
+
+<header class="page-head">
+  <h1>Presets shelf v2 — the fixed shelf, and three designs that keep what works</h1>
+  <p class="sub">Job 1 is the round-3 shelf re-audited through every interactive path and fixed (tab 0). Job 2 is three designs that keep the shelf's strength — presets as recognisable swatch-cards with Save current as a card in the same strip — and remove its 480 px weakness, where only three and a half cards showed and the detail card pushed the controls down. Apply now restores all three blocks on both links; the Link toggle is gone.</p>
+  <div class="controls">
+    <div class="ctl-group"><span class="k">Design</span>
+      <div class="pseg" id="optTabs">
+        <button data-opt="shelf" aria-pressed="true"><span class="tag">0</span>Shelf v1.1 (fixed)</button>
+        <button data-opt="preview" aria-pressed="false"><span class="tag">A</span>Shelf + live preview</button>
+        <button data-opt="grid" aria-pressed="false"><span class="tag">B</span>Wrapping shelf + drawer</button>
+        <button data-opt="swrail" aria-pressed="false"><span class="tag">C</span>Swatch rail</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Stored</span>
+      <div class="pseg" id="countSeg">
+        <button data-count="0" aria-pressed="false">0</button>
+        <button data-count="4" aria-pressed="true">4</button>
+        <button data-count="10" aria-pressed="false">10 (full)</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Theme</span>
+      <div class="pseg" id="themeSeg">
+        <button data-theme="white" aria-pressed="false">White</button>
+        <button data-theme="dark" aria-pressed="true">Dark</button>
+        <button data-theme="black" aria-pressed="false">Black</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Field</span>
+      <div class="pseg" id="fieldSeg">
+        <button data-field="ambient" aria-pressed="true">Ambient</button>
+        <button data-field="static" aria-pressed="false">Static</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Window</span>
+      <div class="pseg" id="widthSeg">
+        <button data-w="480" aria-pressed="true">480 × 640</button>
+        <button data-w="900" aria-pressed="false">900 × 640</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="opt" data-opt="shelf" data-active>
+  <div class="stage"><div class="frame" id="frame-shelf"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>0 — Shelf v1.1, fixed</h2>
+    <p class="idea">The round-3 shelf, kept as the baseline, with every bug from the audit fixed. Same structure: action card first, swatch-cards after, detail beneath, controls under that.</p>
+    <h3>Found → fixed</h3>
+    <ol>
+      <li><b>Strip jumped to the start after every action.</b> Each render rebuilt the DOM and lost <code>scrollLeft</code>; selecting card 8 scrolled it out of view. → Scroll position is saved and restored on render, and the selected card is scrolled into view (<code>inline: nearest</code>).</li>
+      <li><b>Keyboard focus was lost after every action and after every sheet.</b> → Focus is restored to the same control after render; sheets move focus in on open and return it on close; Escape closes any sheet.</li>
+      <li><b>Mouse wheel did nothing on the strip.</b> Vertical wheel over a horizontal strip is a no-op in Chrome. → Wheel is translated to horizontal scroll while the strip can move; two chevron buttons give touch/keyboard users the same, and Left/Right/Home/End move focus between cards.</li>
+      <li><b>No visible focus ring on cards</b>, hover was the only affordance. → <code>:focus-visible</code> rings on cards, chips, squares and inputs.</li>
+      <li><b>Stage blocks overflowed the 104 px card</b> (speed steps were clipped). → Brightness and speed are stacked as two labelled rows of small blocks.</li>
+      <li><b>Save current appended the new card at the far end, off-screen</b>, with its rename input focused where you could not see it. → New presets are inserted right after the action card and scrolled into view.</li>
+      <li><b>Replace mode hid every name behind "Replace?"</b>, so you could not tell which preset you were about to overwrite. → Names stay; a "Replace" badge is added to each card; the mode bar and the action card both cancel it.</li>
+      <li><b>Escape during rename could still commit</b> (blur fired after the render). → Rename commits only while the row is still in rename state; Escape clears that state first.</li>
+      <li><b>"Preset N" could collide</b> after deletes. → Default name is one above the highest existing "Preset N".</li>
+      <li><b>The detail card pushed the controls down and back up</b> on every select/deselect. → The detail area is always present with a fixed minimum height and a placeholder; nothing below it moves. (Still the shelf's cost at 480; designs A–C remove it.)</li>
+      <li><b>Toasts never went away</b> and stacked over the controls. → Auto-dismiss after 6 s, still dismissable.</li>
+      <li><b>The notes claimed "at 900 all ten fit"</b> — they did not (5½ visible in a 630 px panel). → At ≥ 700 px the strip wraps into rows instead of scrolling, so all eleven cards are visible.</li>
+      <li><b>Sheet buttons had no Escape / focus trap</b>; Tab could leave the sheet into the page. → Escape closes; focus is placed on the primary button and returned afterwards.</li>
+    </ol>
+    <h3>Cost that remains at 480</h3>
+    <ul><li>3½ cards visible, the rest by wheel, chevrons or arrow keys; the detail area holds 196 px under the shelf whether or not a card is selected.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="preview">
+  <div class="stage"><div class="frame" id="frame-preview"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>A — Shelf + live preview</h2>
+    <p class="idea">The shelf stays; the detail card becomes a preview. Hovering or arrowing across cards shows that preset on a keyboard silhouette and in the ambient field without writing anything; the panel says "previewing — not written". Click selects; Apply commits; Escape reverts the preview and selection to what the keyboard reports.</p>
+    <h3>Borrowed from</h3>
+    <ul>
+      <li><b>VS Code theme picker</b>: arrow keys preview live, Enter commits, Escape restores the previous theme — the exact interaction model, including the "nothing is written until you commit" promise.</li>
+      <li><b>Lightroom presets</b>: the preview happens on the subject (the photo), not on the preset tile — here on the keyboard silhouette and the field, so the tile can stay small.</li>
+      <li><b>Razer Synapse / SteelSeries GG</b>: the device render above the profile tiles is the thing worth keeping; the sprawl of tiles is not, so the strip is capped at 10 and the render is fixed-height.</li>
+    </ul>
+    <h3>Cap</h3>
+    <ul><li>As the shelf: the action card turns into "10 of 10 — replace one" and enters replace mode with badges on every card.</li></ul>
+    <h3>Cost at 480</h3>
+    <ul><li>Still 3½ cards visible in the strip. The preview card is ~270 px tall and always present, so nothing jumps — but that is 270 px the controls card does not get. The silhouette is 84 keys at ~3.6 px pitch; single colours and per-key patterns read, subtle gradients do not. At 900 the strip wraps to two rows above the preview, so with ten presets the panel scrolls to reach the controls card.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="grid">
+  <div class="stage"><div class="frame" id="frame-grid"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>B — Wrapping shelf + peek drawer</h2>
+    <p class="idea">The strip wraps: at 480 all eleven cards fit in three rows of four (~330 px), cards shrink to swatch, name and two rows of stage blocks; at 900 it is six across, two rows. Selecting a card slides a drawer up over the controls card with the full readout and actions; the grid and the controls do not move. Escape, the scrim or the grip close it.</p>
+    <h3>Borrowed from</h3>
+    <ul>
+      <li><b>macOS wallpaper / Dynamic Desktop</b>: a grid of thumbnails of the actual thing, names secondary, the chosen one outlined — the swatch is the thumbnail here.</li>
+      <li><b>Elgato Stream Deck profiles</b>: the current profile is marked in the list and switching is one action; editing lives in a separate surface — the drawer.</li>
+      <li><b>Lightroom</b>: the presets list never scrolls the photo out of view; here the drawer overlays instead of pushing.</li>
+    </ul>
+    <h3>Cap</h3>
+    <ul><li>Visible by shape: eleven cells, the first being the action. At 10 the action cell reads "10 of 10 — replace" and every card gets a Replace badge.</li></ul>
+    <h3>Cost at 480</h3>
+    <ul><li>Cards are 84 px wide, names ellipsise at ~11 characters, and the effect name is dropped from the card (it is in the drawer). Three rows of cards is a wall of eleven similar boxes; the swatch has to carry recognition alone.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="swrail">
+  <div class="stage"><div class="frame" id="frame-swrail"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>C — Swatch rail</h2>
+    <p class="idea">A vertical strip of ten 38 px squares down the panel's left edge, mirroring the app's own rail: swatch only, the name as a tooltip on hover or focus, the current preset dotted. Beside it the preview — keyboard silhouette, readout, actions — and the controls card under that. It spends the window's 640 px of height instead of its 480 px of width, so all ten plus the action square are visible with no scrolling and no wrapping.</p>
+    <h3>Borrowed from</h3>
+    <ul>
+      <li><b>Lightroom's filmstrip</b> and <b>macOS Dynamic Desktop</b>: a column of thumbnails beside a large preview; you scan the column, you read the preview.</li>
+      <li><b>The app's own rail</b>: at 900 the squares gain names the way the rail gains words — one component, two widths.</li>
+      <li><b>VS Code</b>: Up/Down arrow through the squares previews live; Enter selects; Escape reverts.</li>
+    </ul>
+    <h3>Cap</h3>
+    <ul><li>The strip is exactly eleven squares tall (10 + action) and never longer; the count sits under it. At 10 the action square turns solid and reads "Full", and pressing it enters replace mode.</li></ul>
+    <h3>Cost at 480</h3>
+    <ul><li>Names are hidden until hover/focus, so first-time recognition rests on the swatch; two presets with the same colour and different stages look identical in the strip. The strip takes 48 px of the panel's width, leaving ~350 px for the preview and controls.</li></ul>
+  </aside>
+</section>
+
+</main>
+
+<section class="tokens">
+  <h2>Composited contrast, measured</h2>
+  <p class="sub">Text over the frost card over the field, using the app's exact tokens. Now = the mock keyboard state; Worst = any palette or mixed hue at the cap at brightness 4, or either static endpoint.</p>
+  <table id="tokenTable"></table>
+</section>
+
+<script>
+(() => {
+/* ---------- facts ---------- */
+const MAX = 10, KEYS = 126, COLS = 14;
+const MIXED = new Set(['Dream Rainbow','Windmill','Waterfall','Blooming']);
+const FX_CLASS = {'Off':'fx-off','Custom':'fx-custom','Always On':'fx-solid','Dream Rainbow':'fx-rainbow','One Touch':'fx-reactive','Key Ripple':'fx-reactive','Stars':'fx-stars','Wave':'fx-wave','Shadow':'fx-reactive','Sine Wave':'fx-sine','Windmill':'fx-windmill','Waterfall':'fx-waterfall','Blooming':'fx-bloom'};
+const PALETTE = ['#ff4d4d','#ff9a2e','#ffe14d','#4de07a','#3ee0e8','#4d7bff','#b56bff','#ffffff'];
+const MIX_STOPS = ['#ff4d4d','#ffe14d','#4de07a','#3ee0e8','#4d7bff','#b56bff','#ff9a2e'];
+const LVL = [0,.4,.6,.8,1], DUR = [60,45,30,20,12];
+const perKey = pattern => Array.from({length: KEYS}, (_, i) => {
+  const r = Math.floor(i / COLS), c = i % COLS;
+  if (pattern === 'gaming') { if ((r === 2 && c === 2) || (r === 3 && c >= 1 && c <= 3)) return '#ff4d4d'; if (r === 8 && c >= 11) return '#3ee0e8'; if (r === 0) return '#ff9a2e'; return '#2b2f36'; }
+  if (pattern === 'rows') return ['#ff4d4d','#ff9a2e','#ffe14d','#4de07a','#3ee0e8','#4d7bff','#b56bff','#ff4d4d','#ffe14d'][r];
+  return '#3ee0e8';
+});
+const dominant = keys => { const n = new Map(); keys.forEach(k => n.set(k, (n.get(k) || 0) + 1)); return [...n.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([hex, count]) => ({hex, share: count / keys.length})); };
+const ALL = [
+  {name:'Desk white', effect:'Always On', brightness:4, speed:0, mixing:false, colour:'#ffffff', savedAt:'2026-09-14'},
+  {name:'Night', effect:'Stars', brightness:1, speed:1, mixing:false, colour:'#4d7bff', savedAt:'2026-09-15'},
+  {name:'Rainbow', effect:'Windmill', brightness:3, speed:2, mixing:false, colour:null, savedAt:'2026-09-16'},
+  {name:'Gaming', effect:'Custom', brightness:4, speed:0, mixing:false, colour:null, keys:perKey('gaming'), savedAt:'2026-09-18'},
+  {name:'Wave cyan', effect:'Wave', brightness:2, speed:3, mixing:false, colour:'#3ee0e8', savedAt:'2026-09-18'},
+  {name:'Waterfall', effect:'Waterfall', brightness:3, speed:4, mixing:false, colour:null, savedAt:'2026-09-19'},
+  {name:'Ripple mixed', effect:'Key Ripple', brightness:4, speed:2, mixing:true, colour:'#ff9a2e', savedAt:'2026-09-19'},
+  {name:'Lights off', effect:'Off', brightness:1, speed:0, mixing:false, colour:null, savedAt:'2026-09-20'},
+  {name:'Sine purple', effect:'Sine Wave', brightness:2, speed:1, mixing:false, colour:'#b56bff', savedAt:'2026-09-20'},
+  {name:'A very long preset name', effect:'Custom', brightness:3, speed:0, mixing:false, colour:null, keys:perKey('rows'), savedAt:'2026-09-21'},
+].map((p, i) => ({...p, id: i + 1}));
+const BOARD = {effect:'Windmill', brightness:1, speed:0, mixing:false, colour:null, keys:null};
+let storedCount = 4;
+
+const S = {};
+for (const k of ['shelf','preview','grid','swrail']) S[k] = {presets: [], sel: null, mode: null, renaming: null, preview: null, cur: {...BOARD}, drawer: false};
+const seed = () => { for (const k in S) Object.assign(S[k], {presets: ALL.slice(0, storedCount).map(p => ({...p})), sel: null, mode: null, renaming: null, preview: null, cur: {...BOARD}, drawer: false}); };
+seed();
+
+/* ---------- derived + primitives ---------- */
+const kindOf = p => p.effect === 'Off' ? 'none' : p.effect === 'Custom' ? 'perKey' : (MIXED.has(p.effect) || p.mixing) ? 'mixed' : 'single';
+const colourLabel = p => { const k = kindOf(p); if (k === 'none') return 'Lighting off'; if (k === 'perKey') return `Per-key · ${KEYS} keys`; if (k === 'mixed') return p.mixing && !MIXED.has(p.effect) ? 'Colour Mixing on' : 'Mixed — set by the effect'; return p.colour; };
+const swatch = (p, size = '') => {
+  const k = kindOf(p);
+  if (k === 'perKey') {
+    if (size === 'bands') { const d = dominant(p.keys); let acc = 0; const stops = d.map(x => { const s = `${x.hex} ${acc * 100}% ${(acc + x.share) * 100}%`; acc += x.share; return s; }); return `<span class="swatch" style="background:linear-gradient(90deg,${stops.join(',')},${d[d.length-1].hex} ${acc*100}% 100%)"></span>`; }
+    return `<span class="keygrid ${size}" role="img" aria-label="per-key colours">${p.keys.map(h => `<i style="background:${h}"></i>`).join('')}</span>`;
+  }
+  if (k === 'mixed') return `<span class="swatch mix ${size}"></span>`;
+  if (k === 'none') return `<span class="swatch none ${size}"></span>`;
+  return `<span class="swatch ${size}" style="background:${p.colour}"></span>`;
+};
+const steps = (v, min, max, cls = '') => { let c = ''; for (let i = min; i <= max; i++) c += `<i class="${i <= v ? 'on' : ''}"></i>`; return `<span class="steps ${cls}" role="img" aria-label="${v} of ${min}–${max}">${c}<b>${v}</b></span>`; };
+const stageRows = p => `<span class="stagerow"><em>B</em>${steps(p.brightness, 1, 4, 'sm')}</span><span class="stagerow"><em>S</em>${steps(p.speed, 0, 4, 'sm')}</span>`;
+const fmtDate = d => new Date(d + 'T12:00').toLocaleDateString(undefined, {day:'numeric', month:'short'});
+const sameAs = (a, b) => a.effect === b.effect && a.brightness === b.brightness && a.speed === b.speed && a.mixing === b.mixing && a.colour === b.colour && (a.keys ? a.keys.join() : '') === (b.keys ? b.keys.join() : '');
+const isCurrent = (st, p) => sameAs(st.cur, p);
+const readoutRows = p => `
+  <div class="rows">
+    <div class="row"><span class="k">Effect</span><span class="v">${p.effect}${p.mixing ? '<span class="dim">Colour Mixing on</span>' : ''}</span></div>
+    <div class="row"><span class="k">Colour</span><span class="v">${swatch(p)}<span class="${kindOf(p) === 'single' ? 'mono' : 'dim'}">${colourLabel(p)}</span></span></div>
+    <div class="row"><span class="k">Brightness</span><span class="v">${steps(p.brightness, 1, 4)}</span></div>
+    <div class="row"><span class="k">Speed</span><span class="v">${steps(p.speed, 0, 4)}</span></div>
+  </div>`;
+const nameOrInput = (k, p, cls = 'nm') => S[k].renaming === p.id
+  ? `<input class="name-input" data-rename="${p.id}" data-fk="rename-${p.id}" value="${p.name.replace(/"/g, '&quot;')}" maxlength="24" aria-label="Preset name">`
+  : `<span class="${cls}" title="${p.name}">${p.name}</span>`;
+const actions = (k, p) => `
+  <div class="actions">
+    <button type="button" class="btn" data-act="apply" data-id="${p.id}" data-fk="apply">Apply to keyboard</button>
+    <button type="button" class="btn quiet sm" data-act="rename" data-id="${p.id}" data-fk="rename">Rename</button>
+    <button type="button" class="btn danger sm" data-act="delete" data-id="${p.id}" data-fk="delete">Delete</button>
+  </div>`;
+const countTag = st => `<span class="count ${st.presets.length >= MAX ? 'full' : ''}">${st.presets.length}/${MAX}</span>`;
+const modeBar = (st, text) => st.mode === 'replace' ? `<div class="mode-bar" role="status"><span>${text}</span><button type="button" class="link" data-act="cancelmode" data-fk="cancelmode">Cancel</button></div>` : '';
+
+/* keyboard silhouette: 84 keys, tinted by a preset */
+const U = 40, GAP = 5, PAD = 10;
+const ROWS = [[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[1,1,1,1,1,1,1,1,1,1,1,1,1,2,1],[1.5,1,1,1,1,1,1,1,1,1,1,1,1,1.5,1],[1.75,1,1,1,1,1,1,1,1,1,1,1,2.25,1],[2.25,1,1,1,1,1,1,1,1,1,1,1.75,1,1],[1.25,1.25,1.25,6.25,1,1,1,1,1,1]];
+const KEYRECTS = (() => { const out = []; ROWS.forEach((row, r) => { let x = PAD; row.forEach(w => { out.push({x: x + GAP / 2, y: PAD + r * U + GAP / 2, w: w * U - GAP, h: U - GAP, col: (x - PAD) / (16 * U), row: r}); x += w * U; }); }); return out; })();
+const KB_W = PAD * 2 + 16 * U, KB_H = PAD * 2 + 6 * U;
+const keyFill = (p, key, i) => {
+  const k = kindOf(p);
+  if (k === 'none') return null;
+  if (k === 'perKey') return p.keys[Math.min(KEYS - 1, Math.floor(i * KEYS / 84))];
+  if (k === 'mixed') return MIX_STOPS[Math.floor(key.col * MIX_STOPS.length) % MIX_STOPS.length];
+  return p.colour;
+};
+const keyboardSvg = p => `<svg class="kb" viewBox="0 0 ${KB_W} ${KB_H}" role="img" aria-label="Keyboard showing ${p.effect}">
+  <rect class="plate" x=".5" y=".5" width="${KB_W - 1}" height="${KB_H - 1}" rx="8"/>
+  ${KEYRECTS.map((r, i) => { const f = keyFill(p, r, i); return `<rect class="key" x="${r.x}" y="${r.y}" width="${r.w}" height="${r.h}" rx="4"${f ? ` style="fill:${f};fill-opacity:${LVL[p.brightness]}"` : ''}/>`; }).join('')}
+</svg>`;
+
+/* ---------- shared chrome ---------- */
+const I = {
+  device:'<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 14h10"/></svg>',
+  light:'<svg class="ic" viewBox="0 0 24 24"><path d="M12 3v2M4.9 6.9l1.4 1.4M3 13h2M19 13h2M17.7 8.3l1.4-1.4"/><path d="M8 17a5 5 0 1 1 8 0v2H8z"/><path d="M10 21h4"/></svg>',
+  keys:'<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h2M11 10h2M15 10h2M7 14h10"/></svg>',
+  macro:'<svg class="ic" viewBox="0 0 24 24"><path d="M5 7h14M5 12h9M5 17h11"/><circle cx="19" cy="17" r="2"/></svg>',
+  settings:'<svg class="ic" viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15.5" cy="7" r="2.5"/><circle cx="10.5" cy="17" r="2.5"/></svg>',
+  radio:'<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="13" r="1.5"/><path d="M8.5 9.5a5 5 0 0 0 0 7M15.5 9.5a5 5 0 0 1 0 7M5.6 6.6a9 9 0 0 0 0 12.8M18.4 6.6a9 9 0 0 1 0 12.8"/></svg>',
+  left:'<svg class="ic" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>',
+  right:'<svg class="ic" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
+};
+const battSvg = () => `<svg class="batt" viewBox="0 0 34 16" width="26" height="12" aria-label="Battery 100 percent"><rect x=".75" y=".75" width="28.5" height="14.5" rx="3" fill="none" stroke="var(--text-2)" stroke-width="1.5"/><rect x="31" y="5" width="3" height="6" rx="1" fill="var(--text-2)"/><rect x="2.75" y="2.75" width="25" height="10.5" rx="1.5" fill="var(--ok)"/></svg>`;
+const rail = st => `<aside class="rail glass">
+    <div class="glance">
+      <div class="glance-item">${I.radio}<span class="n">2.4G</span><span class="t">2.4G wireless</span></div>
+      <div class="glance-item">${battSvg()}<span class="n">100%</span><span class="t">100 % · full</span></div>
+      <div class="glance-item">${swatch(st.cur)}<span class="n">${st.cur.effect.split(' ')[0]}</span><span class="t">${st.cur.effect}</span></div>
+    </div>
+    <nav class="nav"><a href="#" tabindex="-1">${I.device}Device</a><a href="#" aria-current="page" tabindex="-1">${I.light}Lighting</a><a href="#" tabindex="-1">${I.keys}Keys</a><a href="#" tabindex="-1">${I.macro}Macros</a><span class="spacer"></span><a href="#" tabindex="-1">${I.settings}Settings</a></nav>
+  </aside>`;
+const field = p => `<div class="field ${FX_CLASS[p.effect]}" style="--c:${kindOf(p) === 'single' ? p.colour : 'transparent'};--lvl:${LVL[p.brightness]};--dur:${DUR[p.speed]}s"><div class="amb"></div></div>`;
+const future = () => `<section class="card glass future"><h2 class="lbl">Live controls</h2><p class="stmt">Effect, colour, brightness, speed — Stage 2</p><p class="help">The live lighting controls go here; presets stay where they are when they arrive.</p></section>`;
+
+/* ---------- shelf cards (v1.1 and A) ---------- */
+const shelfCard = (st, p) => `
+  <button type="button" class="pcard ${isCurrent(st, p) ? 'cur' : ''}" data-sel="${p.id}" data-fk="card-${p.id}" aria-pressed="${p.id === st.sel}" title="${p.name} — ${p.effect}">
+    ${st.mode === 'replace' ? '<span class="badge">Replace</span>' : isCurrent(st, p) ? '<span class="badge soft">Now</span>' : ''}
+    <span class="big">${swatch(p, 'lg')}</span>
+    <span class="nm">${p.name}</span>
+    <span class="fx">${p.effect}</span>
+    ${stageRows(p)}
+  </button>`;
+const addCard = st => st.presets.length >= MAX
+  ? `<button type="button" class="pcard add full" data-act="save" data-fk="save" aria-pressed="${st.mode === 'replace'}"><span class="nm">${MAX} of ${MAX}</span><small>${st.mode === 'replace' ? 'Pick a card to replace — or tap again to cancel' : 'Save current by replacing one'}</small></button>`
+  : `<button type="button" class="pcard add" data-act="save" data-fk="save"><span class="plus">+</span><span class="nm">Save current</span><small>${st.presets.length} of ${MAX} used</small></button>`;
+const shelfStrip = (st, title) => `
+  <div class="card-head"><h2 class="lbl">${title} ${countTag(st)}</h2>
+    <span class="actions" style="margin:0"><span class="shelf-nav"><button type="button" class="btn quiet sm icon" data-scroll="-1" aria-label="Scroll presets left" data-fk="scrl">${I.left}</button><button type="button" class="btn quiet sm icon" data-scroll="1" aria-label="Scroll presets right" data-fk="scrr">${I.right}</button></span><button type="button" class="btn quiet sm" data-act="export" data-fk="export">Export</button><button type="button" class="btn quiet sm" data-act="import" data-fk="import">Import</button></span></div>
+  ${modeBar(st, `${MAX} of ${MAX} — pick the preset to replace with the current lighting`)}
+  <div class="shelf" role="group" aria-label="Presets">${addCard(st)}${st.presets.map(p => shelfCard(st, p)).join('')}</div>
+  ${st.presets.length === 0 ? `<p class="help">Nothing saved for this keyboard yet. Save current keeps what the board is doing now — ${st.cur.effect}, brightness ${st.cur.brightness}, speed ${st.cur.speed} — as "Preset 1".</p>` : ''}`;
+
+const renderShelf = k => {
+  const st = S[k]; const sel = st.presets.find(p => p.id === st.sel);
+  return `
+    <section class="card glass">${shelfStrip(st, 'Presets')}</section>
+    <section class="card glass detail">
+      ${sel ? `<div class="detail-head">${swatch(sel, 'lg')}<div style="flex:1;min-width:0">${nameOrInput(k, sel)}<div class="dt">Saved ${fmtDate(sel.savedAt)}${isCurrent(st, sel) ? ' · this is what the keyboard reports now' : ''}</div></div></div>${readoutRows(sel)}${actions(k, sel)}`
+           : `<div class="placeholder">${st.presets.length ? 'Select a preset to see its readout and apply it.' : 'The readout of a selected preset shows here.'}</div>`}
+    </section>
+    ${future()}`;
+};
+
+/* ---------- A: live preview ---------- */
+const renderPreview = k => {
+  const st = S[k];
+  const sel = st.presets.find(p => p.id === st.sel);
+  const prev = st.presets.find(p => p.id === st.preview);
+  const shown = prev || sel || null;
+  const p = shown || st.cur;
+  const state = prev && prev !== sel ? 'previewing — not written' : sel ? (isCurrent(st, sel) ? 'selected · matches the keyboard' : 'selected — not written') : 'keyboard now';
+  return `
+    <section class="card glass">${shelfStrip(st, 'Presets')}</section>
+    <section class="card glass" aria-live="polite">
+      <div class="preview-head">${shown ? nameOrInput(k, shown) : '<span class="nm">Keyboard now</span>'}<span class="state ${prev && prev !== sel ? 'live' : ''}">${state}</span></div>
+      ${keyboardSvg(p)}
+      <div class="readline"><span><span class="k">Effect</span> <strong>${p.effect}</strong></span><span><span class="k">Colour</span> ${swatch(p)} ${kindOf(p) === 'single' ? `<span class="mono">${p.colour}</span>` : `<span class="dim">${colourLabel(p)}</span>`}</span>${stageRows(p)}${shown ? `<span class="dim">saved ${fmtDate(shown.savedAt)}</span>` : ''}</div>
+      ${sel ? actions(k, sel) : `<p class="help">Hover or arrow across the cards to preview; click to select. Escape returns to what the keyboard reports.</p>`}
+    </section>
+    ${future()}`;
+};
+
+/* ---------- B: wrapping grid + drawer ---------- */
+const gridCard = (st, p) => `
+  <button type="button" class="gcard" data-sel="${p.id}" data-fk="card-${p.id}" aria-pressed="${p.id === st.sel}" title="${p.name} — ${p.effect}">
+    ${st.mode === 'replace' ? '<span class="badge">Replace</span>' : isCurrent(st, p) ? '<span class="badge soft">Now</span>' : ''}
+    ${swatch(p, 'md')}<span class="nm">${p.name}</span><span class="st">${stageRows(p)}</span>
+  </button>`;
+const renderGrid = k => {
+  const st = S[k]; const sel = st.presets.find(p => p.id === st.sel);
+  const add = st.presets.length >= MAX
+    ? `<button type="button" class="gcard add full" data-act="save" data-fk="save" aria-pressed="${st.mode === 'replace'}"><span class="nm">${MAX} of ${MAX}</span><small>${st.mode === 'replace' ? 'pick one, or tap to cancel' : 'replace one with current'}</small></button>`
+    : `<button type="button" class="gcard add" data-act="save" data-fk="save"><span class="plus">+</span><span class="nm">Save current</span><small>${st.presets.length} of ${MAX}</small></button>`;
+  return `
+    <section class="card glass">
+      <div class="card-head"><h2 class="lbl">Presets ${countTag(st)}</h2><span class="actions" style="margin:0"><button type="button" class="btn quiet sm" data-act="export" data-fk="export">Export</button><button type="button" class="btn quiet sm" data-act="import" data-fk="import">Import</button></span></div>
+      ${modeBar(st, `${MAX} of ${MAX} — pick the preset to replace`)}
+      <div class="grid" role="group" aria-label="Presets">${add}${st.presets.map(p => gridCard(st, p)).join('')}</div>
+      ${st.presets.length === 0 ? `<p class="help">Nothing saved for this keyboard yet. Save current keeps ${st.cur.effect}, brightness ${st.cur.brightness}, speed ${st.cur.speed} as "Preset 1".</p>` : ''}
+    </section>
+    ${future()}
+    ${sel && st.drawer ? `<div class="scrim" data-act="closedrawer"></div>` : ''}
+    <section class="card glass drawer ${sel && st.drawer ? 'open' : ''}" role="dialog" aria-label="Preset" ${sel && st.drawer ? '' : 'aria-hidden="true"'}>
+      ${sel ? `<div class="grip"></div><div class="drawer-head">${swatch(sel, 'lg')}<div style="flex:1;min-width:0">${nameOrInput(k, sel)}<div class="dt dim" style="font-size:12px">Saved ${fmtDate(sel.savedAt)}${isCurrent(st, sel) ? ' · matches the keyboard' : ''}</div></div><button type="button" class="btn quiet sm" data-act="closedrawer" data-fk="close">Close</button></div>${readoutRows(sel)}${actions(k, sel)}` : ''}
+    </section>`;
+};
+
+/* ---------- C: swatch rail ---------- */
+const renderSwrail = k => {
+  const st = S[k];
+  const sel = st.presets.find(p => p.id === st.sel);
+  const prev = st.presets.find(p => p.id === st.preview);
+  const shown = prev || sel || null;
+  const p = shown || st.cur;
+  const state = prev && prev !== sel ? 'previewing — not written' : sel ? (isCurrent(st, sel) ? 'selected · matches the keyboard' : 'selected — not written') : 'keyboard now';
+  const squares = st.presets.map((q, i) => `<button type="button" class="sq" data-sel="${q.id}" data-fk="card-${q.id}" aria-pressed="${q.id === st.sel}" aria-label="${q.name}">${kindOf(q) === 'perKey' ? swatch(q, 'md') : swatch(q)}${isCurrent(st, q) ? '<span class="cur" title="what the keyboard reports now"></span>' : ''}<span class="lbl-n">${i + 1}</span><span class="tip">${q.name}${st.mode === 'replace' ? ' — replace' : ''}</span></button>`).join('');
+  const add = st.presets.length >= MAX
+    ? `<button type="button" class="sq add full" data-act="save" data-fk="save" aria-pressed="${st.mode === 'replace'}" aria-label="10 of 10 — save current by replacing one"><span>Full</span><span class="tip">${st.mode === 'replace' ? 'Pick one to replace, or tap to cancel' : 'Full — replace one with current'}</span></button>`
+    : `<button type="button" class="sq add" data-act="save" data-fk="save" aria-label="Save current">+<span class="tip">Save current · ${st.presets.length} of ${MAX}</span></button>`;
+  return `
+    <div class="C-body">
+      <div class="sqrail glass" role="group" aria-label="Presets">${squares}${add}<span class="C-count">${st.presets.length}/${MAX}</span></div>
+      <div class="C-main">
+        <section class="card glass" aria-live="polite">
+          ${modeBar(st, `${MAX} of ${MAX} — pick the square to replace`)}
+          <div class="preview-head">${shown ? nameOrInput(k, shown) : '<span class="nm">Keyboard now</span>'}<span class="state ${prev && prev !== sel ? 'live' : ''}">${state}</span></div>
+          ${keyboardSvg(p)}
+          <div class="readline"><span><span class="k">Effect</span> <strong>${p.effect}</strong></span><span><span class="k">Colour</span> ${swatch(p)} ${kindOf(p) === 'single' ? `<span class="mono">${p.colour}</span>` : `<span class="dim">${colourLabel(p)}</span>`}</span>${stageRows(p)}${shown ? `<span class="dim">saved ${fmtDate(shown.savedAt)}</span>` : ''}</div>
+          ${sel ? actions(k, sel) : `<p class="help">${st.presets.length ? 'Hover or arrow down the squares to preview; click to select.' : `Nothing saved yet — the + square keeps ${st.cur.effect}, brightness ${st.cur.brightness}, speed ${st.cur.speed} as "Preset 1".`}</p>`}
+          <div class="actions" style="justify-content:flex-end"><button type="button" class="btn quiet sm" data-act="export" data-fk="export">Export</button><button type="button" class="btn quiet sm" data-act="import" data-fk="import">Import</button></div>
+        </section>
+        ${future()}
+      </div>
+    </div>`;
+};
+
+/* ---------- sheets ---------- */
+let returnFk = null;
+const sheet = (k, html) => {
+  const back = returnFk; returnFk = null;
+  const w = document.createElement('div'); w.className = 'sheet-wrap';
+  w.innerHTML = `<div class="sheet" role="dialog" aria-modal="true">${html}</div>`;
+  const close = () => { w.remove(); focusKey(k, back || 'save'); };
+  w.close = close;
+  w.addEventListener('click', e => { if (e.target === w) close(); });
+  w.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { e.stopPropagation(); close(); return; }
+    if (e.key === 'Tab') { const f = [...w.querySelectorAll('button,input,[tabindex="0"]')].filter(x => !x.disabled); const i = f.indexOf(document.activeElement); if (e.shiftKey && i <= 0) { e.preventDefault(); f[f.length - 1].focus(); } else if (!e.shiftKey && i === f.length - 1) { e.preventDefault(); f[0].focus(); } }
+  });
+  frames[k].appendChild(w);
+  (w.querySelector('[data-primary]') || w.querySelector('button')).focus();
+  return w;
+};
+const toast = (k, text) => { frames[k].querySelectorAll('.toast').forEach(t => t.remove()); const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.innerHTML = `<span>${text}</span><button type="button" class="link" data-close>Dismiss</button>`; t.querySelector('[data-close]').onclick = () => t.remove(); frames[k].appendChild(t); setTimeout(() => t.remove(), 6000); };
+
+const confirmApply = (k, p) => {
+  const st = S[k];
+  const w = sheet(k, `
+    <h2>Apply “${p.name}” to the keyboard?</h2>
+    <p class="body">This writes to the board. Its current lighting — <strong>${st.cur.effect}, brightness ${st.cur.brightness}, speed ${st.cur.speed}</strong> — is not saved anywhere and will be overwritten.</p>
+    <ul class="check">
+      <li><span><strong>Profile block</strong> <span class="dim">effect, brightness, speed, mixing</span></span><span class="pend">will write</span></li>
+      <li><span><strong>Effect colours</strong> <span class="dim">13 × RGB</span></span><span class="pend">will write</span></li>
+      <li><span><strong>Per-key colours</strong> <span class="dim">126 × RGB</span></span><span class="pend">will write</span></li>
+    </ul>
+    <div class="actions"><button type="button" class="btn" data-go data-primary>Apply</button><button type="button" class="btn quiet" data-savefirst>Save current first</button><button type="button" class="btn quiet" data-cancel>Cancel</button></div>`);
+  w.querySelector('[data-cancel]').onclick = w.close;
+  w.querySelector('[data-savefirst]').onclick = () => { w.close(); doSave(k); };
+  w.querySelector('[data-go]').onclick = () => { w.close(); st.cur = {effect: p.effect, brightness: p.brightness, speed: p.speed, mixing: p.mixing, colour: p.colour, keys: p.keys || null}; st.preview = null; render(k); resultApply(k, p); };
+};
+const resultApply = (k, p) => {
+  const w = sheet(k, `
+    <h2>Applied “${p.name}”</h2>
+    <p class="body">Read back from the keyboard after the write:</p>
+    <ul class="check">
+      <li><span><strong>Profile</strong> <span class="dim">${p.effect} · B${p.brightness} S${p.speed} · mixing ${p.mixing ? 'on' : 'off'}</span></span><span class="ok">verified</span></li>
+      <li><span><strong>Effect colours</strong> <span class="dim">${kindOf(p) === 'single' ? `<span class="swatch" style="background:${p.colour}"></span> <span class="mono">${p.colour}</span> for ${p.effect}` : '13 × RGB'}</span></span><span class="ok">verified</span></li>
+      <li><span><strong>Per-key colours</strong> <span class="dim">${p.keys ? '126 keys' : '126 keys, unchanged by this effect'}</span></span><span class="ok">verified</span></li>
+    </ul>
+    <div class="actions"><button type="button" class="btn" data-ok data-primary>Done</button></div>`);
+  w.querySelector('[data-ok]').onclick = w.close;
+};
+const confirmDelete = (k, p) => {
+  const w = sheet(k, `<h2>Delete “${p.name}”?</h2><p class="body">The keyboard is not touched; only the saved snapshot goes. There is no undo — Export first if you want a copy.</p><div class="actions"><button type="button" class="btn danger" data-go data-primary>Delete</button><button type="button" class="btn quiet" data-cancel>Cancel</button></div>`);
+  w.querySelector('[data-cancel]').onclick = w.close;
+  w.querySelector('[data-go]').onclick = () => { const st = S[k]; w.remove(); st.presets = st.presets.filter(x => x.id !== p.id); if (st.sel === p.id) { st.sel = null; st.drawer = false; } if (st.preview === p.id) st.preview = null; render(k); focusKey(k, 'save'); toast(k, `Deleted “${p.name}”.`); };
+};
+let idSeq = 100;
+const nextName = st => { const n = st.presets.map(p => /^Preset (\d+)$/.exec(p.name)).filter(Boolean).map(m => +m[1]); return `Preset ${(n.length ? Math.max(...n) : 0) + 1}`; };
+const snapshot = st => ({...st.cur, keys: st.cur.keys ? [...st.cur.keys] : null, id: ++idSeq, name: nextName(st), savedAt: '2026-09-21'});
+const doSave = k => {
+  const st = S[k];
+  if (st.presets.length >= MAX) { st.mode = st.mode === 'replace' ? null : 'replace'; render(k); focusKey(k, 'save'); return; }
+  const p = snapshot(st);
+  st.presets.unshift(p); st.sel = p.id; st.renaming = p.id; st.preview = null; st.drawer = true; render(k);
+  const inp = frames[k].querySelector('[data-rename]'); if (inp) inp.select();
+  frames[k].querySelector(`[data-sel="${p.id}"]`)?.scrollIntoView({block: 'nearest', inline: 'nearest'});
+  toast(k, `Saved the current lighting as “${p.name}” — ${st.presets.length} of ${MAX}. Type to rename.`);
+};
+const doReplace = (k, target) => {
+  const st = S[k];
+  const w = sheet(k, `<h2>Replace “${target.name}” with the current lighting?</h2><p class="body">The snapshot of <strong>${target.effect}, B${target.brightness} S${target.speed}</strong> from ${fmtDate(target.savedAt)} is discarded and “${target.name}” becomes <strong>${st.cur.effect}, B${st.cur.brightness} S${st.cur.speed}</strong>. The keyboard is not touched.</p><div class="actions"><button type="button" class="btn" data-go data-primary>Replace</button><button type="button" class="btn quiet" data-cancel>Cancel</button></div>`);
+  w.querySelector('[data-cancel]').onclick = () => { w.close(); };
+  w.querySelector('[data-go]').onclick = () => { w.remove(); const i = st.presets.findIndex(p => p.id === target.id); st.presets[i] = {...snapshot(st), id: target.id, name: target.name}; st.mode = null; st.sel = target.id; st.drawer = true; render(k); focusKey(k, `card-${target.id}`); toast(k, `“${target.name}” now holds the current lighting.`); };
+};
+const doImport = k => {
+  const st = S[k]; const free = MAX - st.presets.length;
+  const incoming = [ALL[4], ALL[8], ALL[9]].map(p => ({...p, id: ++idSeq}));
+  const w = sheet(k, `
+    <h2>Import ${incoming.length} presets</h2>
+    <p class="body">From <span class="mono">presets-K1PRO.json</span>, saved for this keyboard's uuid. ${free >= incoming.length ? `<strong>${free} slots free</strong> — all fit.` : free === 0 ? `<strong>No slots free</strong> (${MAX} of ${MAX}). Untick them, delete some first, or replace: an import can take the place of an existing preset.` : `<strong>${free} slot${free === 1 ? '' : 's'} free</strong> for ${incoming.length} presets. Untick ${incoming.length - free} or replace existing ones.`}</p>
+    <ul class="check">${incoming.map((p, i) => `<li><label style="display:flex;gap:8px;align-items:center;flex:1;cursor:pointer;min-width:0"><input type="checkbox" data-i="${i}" ${i < free ? 'checked' : ''}>${kindOf(p) === 'perKey' ? swatch(p, 'bands') : swatch(p)}<span style="min-width:0"><strong>${p.name}</strong> <span class="dim">${p.effect} · B${p.brightness} S${p.speed}</span></span></label>${i >= free ? `<button type="button" class="link" data-replace="${i}">replace…</button>` : ''}</li>`).join('')}</ul>
+    <p class="body" style="margin-top:8px" data-tally></p>
+    <div class="actions"><button type="button" class="btn" data-go data-primary>Import ticked</button><button type="button" class="btn quiet" data-cancel>Cancel</button></div>`);
+  const tally = () => { const n = [...w.querySelectorAll('input:checked')].length; const el = w.querySelector('[data-tally]'); const over = n - free; el.innerHTML = over > 0 ? `<strong style="color:var(--bad)">${n} ticked, ${free} free — ${over} too many.</strong>` : `${n} ticked, ${free - n} slot${free - n === 1 ? '' : 's'} left after.`; w.querySelector('[data-go]').disabled = over > 0; };
+  w.querySelectorAll('input').forEach(i => i.onchange = tally); tally();
+  w.querySelectorAll('[data-replace]').forEach(b => b.onclick = () => { w.close(); st.mode = 'replace'; render(k); toast(k, 'Pick which preset the import replaces.'); });
+  w.querySelector('[data-cancel]').onclick = w.close;
+  w.querySelector('[data-go]').onclick = () => { const picks = [...w.querySelectorAll('input:checked')].map(i => incoming[+i.dataset.i]); w.close(); picks.forEach(p => st.presets.push({...p})); render(k); toast(k, `Imported ${picks.length} — ${st.presets.length} of ${MAX}.`); };
+};
+
+let activeOpt = 'shelf';
+/* composited contrast over the frost card */
+const parseColor = str => { str = str.trim(); if (str[0] === '#') return [1,3,5].map(i => parseInt(str.slice(i, i + 2), 16)).concat([1]); const p = str.match(/rgba?\(([^)]+)\)/)[1].split(/[\s,\/]+/).filter(Boolean).map(Number); return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1]; };
+const lin = c => { c /= 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; };
+const lum = rgb => .2126 * lin(rgb[0]) + .7152 * lin(rgb[1]) + .0722 * lin(rgb[2]);
+const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+const over = (top, a, bot) => bot.slice(0, 3).map((c, i) => c * (1 - a) + top[i] * a);
+function renderTokens() {
+  const cs = getComputedStyle(document.documentElement); const val = n => cs.getPropertyValue(n).trim();
+  const bg = parseColor(val('--bg')), cap = parseFloat(val('--cap')), fill = parseColor(val('--glass-frost'));
+  const isStatic = document.documentElement.dataset.field === 'static';
+  const ends = [parseColor(val('--static-a')), parseColor(val('--static-b'))];
+  const st = S[activeOpt]; const shown = st.presets.find(p => p.id === st.preview) || st.cur; const kind = kindOf(shown);
+  const amb = (hexes, lvl) => hexes.map(h => over(parseColor(h), cap * lvl, bg));
+  const nowF = isStatic ? ends : kind === 'none' ? [bg] : amb(kind === 'single' ? [shown.colour] : MIX_STOPS, LVL[shown.brightness]);
+  const worstF = isStatic ? ends : amb(PALETTE.concat(MIX_STOPS), 1);
+  const comp = f => over(fill, fill[3], f);
+  const rows = [['--text', 'body text, names, values'], ['--text-2', 'secondary: labels, dates, effect lines'], ['--accent', 'accent as text: preview state, links']].map(([v, why]) => {
+    const fg = parseColor(val(v)); const now = Math.min(...nowF.map(f => ratio(fg, comp(f)))); const worst = Math.min(...worstF.map(f => ratio(fg, comp(f))));
+    const px = worstF.map(comp).sort((a, b) => ratio(fg, a) - ratio(fg, b))[0].map(Math.round);
+    const cell = r => `<td class="${r >= 4.5 ? 'pass' : 'fail'}">${r.toFixed(2)} : 1${r >= 4.5 ? '' : ' — below 4.5'}</td>`;
+    return `<tr><td><span class="sw" style="background:${val(v)}"></span><code>${v}</code></td><td>${why}</td><td>card <code>${val('--glass-frost')}</code> over field</td><td><span class="sw" style="background:rgb(${px})"></span>rgb(${px.join(', ')})</td>${cell(now)}${cell(worst)}</tr>`;
+  }).join('');
+  document.getElementById('tokenTable').innerHTML = `<thead><tr><th>Foreground</th><th>Used for</th><th>Surface (${document.documentElement.dataset.theme}, ${isStatic ? 'static' : 'ambient'})</th><th>Worst composited pixel</th><th>Now</th><th>Worst</th></tr></thead><tbody>${rows}</tbody>`;
+}
+/* ---------- render with scroll + focus preservation ---------- */
+const renderers = {shelf: renderShelf, preview: renderPreview, grid: renderGrid, swrail: renderSwrail};
+const frames = {}; for (const k in renderers) frames[k] = document.getElementById('frame-' + k);
+const focusKey = (k, key) => { const el = frames[k].querySelector(`[data-fk="${key}"]`); if (el) el.focus({preventScroll: false}); };
+const render = k => {
+  const st = S[k];
+  const fr = frames[k];
+  const scroll = {shelf: fr.querySelector('.shelf')?.scrollLeft ?? 0, panel: fr.querySelector('.panel')?.scrollTop ?? 0, rail: fr.querySelector('.sqrail')?.scrollTop ?? 0};
+  const focused = document.activeElement?.closest?.('[data-fk]')?.dataset.fk;
+  const shownP = (st.presets.find(p => p.id === st.preview) || st.cur);
+  fr.style.setProperty('--c-glow', kindOf(shownP) === 'single' ? shownP.colour : kindOf(shownP) === 'none' ? 'transparent' : '#b56bff');
+  fr.innerHTML = `<div class="app">${field(shownP)}${rail(st)}<main class="panel"><header class="panel-head"><strong>Lighting</strong><span class="fw">Mercury K1 PRO</span></header>${renderers[k](k)}</main></div>`;
+  const shelf = fr.querySelector('.shelf'); if (shelf) shelf.scrollLeft = scroll.shelf;
+  const panel = fr.querySelector('.panel'); if (panel) panel.scrollTop = scroll.panel;
+  const sr = fr.querySelector('.sqrail'); if (sr) sr.scrollTop = scroll.rail;
+  if (focused && !fr.querySelector('.sheet-wrap')) focusKey(k, focused);
+  if (st.sel) fr.querySelector(`[data-sel="${st.sel}"]`)?.scrollIntoView({block: 'nearest', inline: 'nearest'});
+  renderTokens();
+};
+
+for (const k in frames) {
+  render(k);
+  const fr = frames[k];
+  fr.addEventListener('click', e => {
+    const st = S[k];
+    if (e.target.closest('.sheet-wrap') || e.target.closest('.toast')) return;
+    const selBtn = e.target.closest('[data-sel]');
+    const actBtn = e.target.closest('[data-act]');
+    const scrollBtn = e.target.closest('[data-scroll]');
+    if (e.target.closest('.name-input')) return;
+    if (scrollBtn) { const s = fr.querySelector('.shelf'); s.scrollBy({left: +scrollBtn.dataset.scroll * 224, behavior: 'smooth'}); return; }
+    if (selBtn) {
+      const id = +selBtn.dataset.sel; const p = st.presets.find(x => x.id === id);
+      if (st.mode === 'replace') { returnFk = `card-${id}`; doReplace(k, p); return; }
+      if (st.sel === id && k === 'grid') { st.drawer = !st.drawer; } else { st.sel = st.sel === id && k === 'shelf' ? null : id; st.drawer = true; }
+      st.renaming = null; st.preview = null; render(k); return;
+    }
+    if (!actBtn) return;
+    const id = +actBtn.dataset.id; const p = st.presets.find(x => x.id === id);
+    returnFk = actBtn.dataset.fk || null;
+    switch (actBtn.dataset.act) {
+      case 'apply': confirmApply(k, p); break;
+      case 'rename': st.renaming = id; render(k); fr.querySelector('[data-rename]')?.select(); break;
+      case 'delete': confirmDelete(k, p); break;
+      case 'save': doSave(k); break;
+      case 'cancelmode': st.mode = null; render(k); focusKey(k, 'save'); break;
+      case 'closedrawer': st.drawer = false; st.renaming = null; render(k); focusKey(k, `card-${st.sel}`); break;
+      case 'export': toast(k, `Exported ${st.presets.length} preset${st.presets.length === 1 ? '' : 's'} → presets-K1PRO-2026-09-21.json (uuid inside, so another board refuses it).`); break;
+      case 'import': doImport(k); break;
+    }
+  });
+  /* hover / focus preview (A and C) */
+  let holdPreview = false;
+  const setPreview = (id) => { const st = S[k]; if (holdPreview || st.mode === 'replace' || st.preview === id) return; st.preview = id; render(k); };
+  fr.addEventListener('mouseover', e => { if (k !== 'preview' && k !== 'swrail') return; const c = e.target.closest('[data-sel]'); if (c) setPreview(+c.dataset.sel); });
+  fr.addEventListener('mouseleave', () => { if ((k === 'preview' || k === 'swrail') && S[k].preview) setPreview(null); });
+  fr.addEventListener('mouseout', e => { if (k !== 'preview' && k !== 'swrail') return; const c = e.target.closest('[data-sel]'); if (c && !c.contains(e.relatedTarget) && !e.relatedTarget?.closest?.('[data-sel]')) setPreview(null); });
+  fr.addEventListener('focusin', e => { if (k !== 'preview' && k !== 'swrail') return; const c = e.target.closest('[data-sel]'); setPreview(c ? +c.dataset.sel : null); });
+  /* keyboard: arrows between cards, Escape */
+  fr.addEventListener('keydown', e => {
+    const st = S[k];
+    if (e.target.closest('.sheet-wrap')) return;
+    const inp = e.target.closest('[data-rename]');
+    if (inp) {
+      if (e.key === 'Enter') { const p = st.presets.find(x => x.id === +inp.dataset.rename); p.name = inp.value.trim() || p.name; st.renaming = null; render(k); focusKey(k, 'rename'); }
+      if (e.key === 'Escape') { st.renaming = null; render(k); focusKey(k, 'rename'); }
+      return;
+    }
+    if (e.key === 'Escape') {
+      if (st.mode === 'replace') { st.mode = null; render(k); focusKey(k, 'save'); return; }
+      if (k === 'grid' && st.drawer) { st.drawer = false; render(k); focusKey(k, `card-${st.sel}`); return; }
+      if (st.preview || st.sel) { const fk = st.preview ? `card-${st.preview}` : `card-${st.sel}`; st.preview = null; st.sel = null; holdPreview = true; render(k); focusKey(k, fk); holdPreview = false; }
+      return;
+    }
+    const cards = [...fr.querySelectorAll('.shelf > button, .grid > button, .sqrail > button')];
+    const i = cards.indexOf(e.target); if (i < 0) return;
+    const vertical = k === 'swrail';
+    const next = {ArrowRight: !vertical ? 1 : 0, ArrowLeft: !vertical ? -1 : 0, ArrowDown: vertical ? 1 : (k === 'grid' ? 4 : 0), ArrowUp: vertical ? -1 : (k === 'grid' ? -4 : 0)}[e.key];
+    if (next) { e.preventDefault(); cards[Math.max(0, Math.min(cards.length - 1, i + next))].focus(); }
+    if (e.key === 'Home') { e.preventDefault(); cards[0].focus(); }
+    if (e.key === 'End') { e.preventDefault(); cards[cards.length - 1].focus(); }
+  });
+  fr.addEventListener('focusout', e => {
+    const inp = e.target.closest?.('[data-rename]'); if (!inp) return;
+    const st = S[k]; const id = +inp.dataset.rename;
+    if (st.renaming !== id) return;
+    const p = st.presets.find(x => x.id === id); if (!p) return;
+    p.name = inp.value.trim() || p.name; st.renaming = null; render(k);
+  });
+  /* wheel → horizontal scroll on the strip */
+  fr.addEventListener('wheel', e => {
+    const s = e.target.closest('.shelf'); if (!s || s.scrollWidth <= s.clientWidth) return;
+    const d = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+    const can = d > 0 ? s.scrollLeft + s.clientWidth < s.scrollWidth - 1 : s.scrollLeft > 0;
+    if (can) { e.preventDefault(); s.scrollLeft += d; }
+  }, {passive: false});
+}
+
+/* page controls */
+const tabs = document.getElementById('optTabs');
+tabs.addEventListener('click', e => { const b = e.target.closest('[data-opt]'); if (!b) return; activeOpt = b.dataset.opt; tabs.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); document.querySelectorAll('.opt').forEach(o => o.toggleAttribute('data-active', o.dataset.opt === activeOpt)); renderTokens(); });
+document.addEventListener('keydown', e => { if (e.target.matches('input,textarea') || e.target.closest('.frame')) return; const i = ['0','1','2','3'].indexOf(e.key); if (i >= 0) tabs.querySelectorAll('button')[i].click(); });
+const countSeg = document.getElementById('countSeg');
+countSeg.addEventListener('click', e => { const b = e.target.closest('[data-count]'); if (!b) return; storedCount = +b.dataset.count; countSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); seed(); Object.keys(frames).forEach(render); });
+const widthSeg = document.getElementById('widthSeg'); const rulers = document.querySelectorAll('[data-ruler]');
+const setWidth = w => { document.documentElement.style.setProperty('--frame-w', w + 'px'); widthSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.w === String(w))); rulers.forEach(r => r.textContent = `${w} × 640 px window`); Object.keys(frames).forEach(k => { const st = S[k]; if (st.sel) frames[k].querySelector(`[data-sel="${st.sel}"]`)?.scrollIntoView({block: 'nearest', inline: 'nearest'}); }); };
+widthSeg.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if (b) setWidth(+b.dataset.w); });
+setWidth(480);
+const themeSeg = document.getElementById('themeSeg');
+themeSeg.addEventListener('click', e => { const b = e.target.closest('[data-theme]'); if (!b) return; document.documentElement.dataset.theme = b.dataset.theme; themeSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderTokens(); });
+const fieldSeg = document.getElementById('fieldSeg');
+fieldSeg.addEventListener('click', e => { const b = e.target.closest('[data-field]'); if (!b) return; document.documentElement.dataset.field = b.dataset.field; fieldSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderTokens(); });
+
+renderTokens();
+})();
+</script>
+</body>
+</html>

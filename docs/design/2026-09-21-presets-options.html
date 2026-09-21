@@ -1,0 +1,785 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-field="ambient">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>K1 PRO — Lighting presets, four structures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&display=swap" rel="stylesheet">
+<style>
+/* ---------- tokens: verbatim from apps/web/src/styles/tokens.css ---------- */
+:root{--radius:12px;--ok:#8fd694;--bad:#ff8a7a;--frame-w:480px}
+:root[data-theme="white"]{--bg:#eceef2;--text:#17191d;--text-2:#4b5160;--accent:#8f4a00;--accent-ink:#fff7ec;--accent-soft:rgba(143,74,0,.14);--ok:#1d6a2f;--bad:#a83220;--hair:rgba(23,25,29,.14);--edge:rgba(255,255,255,.85);--edge-lo:rgba(23,25,29,.10);--edge-hi:rgba(255,255,255,.95);--shadow:rgba(23,25,29,.10);--glass-frost:rgba(255,255,255,.60);--cap:.34;--static-a:#f6f7fa;--static-b:#d9dee8;--grain:.05;--page-bg:#dfe2e8;--page-text:#17191d;--page-text-2:#4b5160}
+:root[data-theme="dark"]{--bg:#1a1c20;--text:#eceef2;--text-2:#bbc0ca;--accent:#f5b043;--accent-ink:#1a1206;--accent-soft:rgba(245,176,67,.16);--hair:rgba(255,255,255,.10);--edge:rgba(255,255,255,.14);--edge-lo:rgba(255,255,255,.06);--edge-hi:rgba(255,255,255,.18);--shadow:rgba(0,0,0,.35);--glass-frost:rgba(255,255,255,.06);--cap:.14;--static-a:#24262c;--static-b:#141518;--grain:.06;--page-bg:#101114;--page-text:#e6e8ec;--page-text-2:#a9aeb8}
+:root[data-theme="black"]{--bg:#000000;--text:#f2f2f2;--text-2:#b9bcc4;--accent:#f5b043;--accent-ink:#1a1206;--accent-soft:rgba(245,176,67,.18);--hair:rgba(255,255,255,.12);--edge:rgba(255,255,255,.18);--edge-lo:rgba(255,255,255,.07);--edge-hi:rgba(255,255,255,.26);--shadow:rgba(0,0,0,.6);--glass-frost:rgba(255,255,255,.05);--cap:.26;--static-a:#0b0b0d;--static-b:#000000;--grain:.08;--page-bg:#141414;--page-text:#ececec;--page-text-2:#a9acb3}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page-bg);color:var(--page-text);font-family:"Archivo",system-ui,sans-serif;font-variant-numeric:tabular-nums;font-size:15px;line-height:1.45}
+button,input{font:inherit;color:inherit}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
+p{margin:0}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
+
+/* ---------- page chrome (same as rounds 1–2) ---------- */
+.page-head{padding:28px 24px 12px;max-width:1380px;margin:0 auto}
+.page-head h1{font-size:26px;font-stretch:88%;font-weight:700}
+.page-head .sub{color:var(--page-text-2);max-width:76ch;margin-top:6px}
+.page-head .sub+.sub{margin-top:8px}
+.controls{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--hair)}
+.ctl-group{display:flex;align-items:center;gap:8px}
+.ctl-group .k{font-stretch:75%;text-transform:uppercase;letter-spacing:.09em;font-size:12px;color:var(--page-text-2);margin-right:2px}
+.pseg{display:inline-flex;border:1px solid var(--hair);border-radius:8px;overflow:hidden;background:var(--bg)}
+.pseg button{background:none;border:0;padding:7px 13px;cursor:pointer;color:var(--page-text-2);border-right:1px solid var(--hair)}
+.pseg button:last-child{border-right:0}
+.pseg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.pseg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.pseg .tag{display:inline-block;font-stretch:75%;letter-spacing:.06em;font-size:11px;margin-right:6px;opacity:.85}
+main{max-width:1380px;margin:0 auto;padding:14px 24px 40px}
+.opt{display:none;grid-template-columns:auto minmax(280px,1fr);gap:28px;align-items:start}
+.opt[data-active]{display:grid}
+@media (max-width:1000px){.opt{grid-template-columns:1fr}}
+.stage{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ruler{font-stretch:75%;letter-spacing:.08em;text-transform:uppercase;font-size:12px;color:var(--page-text-2)}
+.notes{padding-top:4px;max-width:66ch}
+.notes h2{font-size:20px;margin-bottom:2px;font-stretch:90%}
+.notes .idea{color:var(--page-text-2);font-size:15px;margin-bottom:14px}
+.notes h3{font-stretch:75%;text-transform:uppercase;letter-spacing:.1em;font-size:12px;color:var(--page-text-2);margin:16px 0 6px}
+.notes ul{margin:0;padding-left:18px}
+.notes li{margin:3px 0}
+.tokens{max-width:1380px;margin:0 auto;padding:0 24px 60px}
+.tokens h2{font-size:18px;margin-bottom:8px}
+.tokens .sub{color:var(--page-text-2);max-width:78ch}
+.tokens table{border-collapse:collapse;font-size:14px}
+.tokens th,.tokens td{text-align:left;padding:5px 14px 5px 0;border-bottom:1px solid var(--hair);vertical-align:top}
+.tokens th{font-stretch:75%;text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--page-text-2);font-weight:500}
+.tokens .sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid var(--hair)}
+.tokens .fail{color:var(--bad);font-weight:600}
+.tokens .pass{color:var(--ok)}
+
+/* ---------- the window: apps/web app.css, scoped to a frame with container queries ---------- */
+.frame{width:var(--frame-w);height:640px;position:relative;overflow:hidden;background:var(--bg);color:var(--text);border:1px solid var(--hair);border-radius:var(--radius);container-type:inline-size;container-name:frame;font-size:13.5px;line-height:1.45;isolation:isolate}
+.app{position:absolute;inset:0;display:flex;gap:10px;padding:10px}
+.field{position:absolute;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.field .amb{position:absolute;inset:0;opacity:calc(var(--cap) * var(--lvl))}
+:root[data-field="static"] .field{background:linear-gradient(135deg,var(--static-a),var(--static-b))}
+:root[data-field="static"] .field .amb{display:none}
+:root[data-field="static"] .field::after{content:"";position:absolute;inset:0;opacity:var(--grain);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");background-size:160px}
+.fx-solid .amb{background:radial-gradient(60% 50% at 50% 12%,var(--c),transparent 70%)}
+.fx-reactive .amb{background:radial-gradient(45% 35% at 30% 75%,var(--c),transparent 70%),radial-gradient(35% 30% at 75% 25%,var(--c),transparent 70%)}
+.fx-wave .amb{background:linear-gradient(100deg,transparent 20%,var(--c) 45%,transparent 70%);background-size:220% 100%;animation:slide var(--dur) linear infinite}
+.fx-sine .amb{background:linear-gradient(100deg,transparent,var(--c) 25%,transparent 50%,var(--c) 75%,transparent);background-size:220% 100%;animation:slide var(--dur) ease-in-out infinite}
+.fx-stars .amb{background:radial-gradient(circle at 18% 30%,var(--c) 0 2%,transparent 9%),radial-gradient(circle at 63% 70%,var(--c) 0 2%,transparent 9%),radial-gradient(circle at 82% 22%,var(--c) 0 1.5%,transparent 8%),radial-gradient(circle at 40% 55%,var(--c) 0 1.5%,transparent 7%);animation:twinkle var(--dur) ease-in-out infinite}
+.fx-rainbow .amb{background:linear-gradient(100deg,#ff4d4d,#ffe14d,#4de07a,#3ee0e8,#4d7bff,#b56bff,#ff4d4d);background-size:300% 100%;animation:slide var(--dur) linear infinite}
+.fx-windmill .amb{inset:-60%;background:conic-gradient(from 0deg,#ff4d4d,#ffe14d,#4de07a,#3ee0e8,#4d7bff,#b56bff,#ff4d4d);animation:spin var(--dur) linear infinite;filter:blur(40px)}
+.fx-waterfall .amb{background:linear-gradient(180deg,#3ee0e8,#4d7bff,#b56bff,#3ee0e8);background-size:100% 300%;animation:fall var(--dur) linear infinite}
+.fx-bloom .amb{background:radial-gradient(45% 45% at 50% 50%,#ff9a2e,#b56bff 50%,transparent 75%);animation:bloom var(--dur) ease-in-out infinite}
+.fx-custom .amb{background:radial-gradient(50% 45% at 25% 30%,#3ee0e8,transparent 70%),radial-gradient(50% 45% at 78% 70%,#b56bff,transparent 70%)}
+.fx-off .amb{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slide{to{background-position:-300% 0}}
+@keyframes fall{to{background-position:0 -300%}}
+@keyframes twinkle{0%,100%{opacity:calc(var(--cap) * var(--lvl) * .5)}50%{opacity:calc(var(--cap) * var(--lvl))}}
+@keyframes bloom{0%,100%{transform:scale(.7)}50%{transform:scale(1.4)}}
+@media (prefers-reduced-motion:reduce){.amb{animation:none!important}}
+
+.glass{position:relative;border-radius:var(--radius);border:1px solid var(--edge-lo);border-top-color:var(--edge);background:var(--glass-frost);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);box-shadow:inset 0 1px 0 var(--edge-hi),0 10px 30px -12px var(--shadow),0 0 60px -30px var(--c-glow,transparent)}
+
+.rail{width:60px;flex:none;display:flex;flex-direction:column;padding:10px 0;overflow:hidden}
+.glance{display:flex;flex-direction:column;gap:6px;padding:0 8px 10px;border-bottom:1px solid var(--hair)}
+.glance-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;font-size:11px;font-weight:600;text-align:center;color:var(--text-2)}
+.glance-item .t{display:none}
+.glance .ic{width:18px;height:18px;stroke-width:1.8}
+.nav{flex:1;display:flex;flex-direction:column;gap:2px;padding:10px 8px}
+.nav .spacer{flex:1}
+.nav a{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:8px;color:var(--text-2);font-size:10.5px;font-stretch:80%;text-decoration:none}
+.nav a[aria-current="page"]{background:var(--accent-soft);color:var(--text)}
+.nav .ic{width:20px;height:20px;stroke-width:1.6}
+.ic{stroke:currentColor;fill:none;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+.panel{flex:1;min-width:0;overflow:auto;padding-top:6px;display:flex;flex-direction:column}
+.panel-head{padding:0 6px 6px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.panel-head strong{font-size:17px;font-weight:600;display:block}
+.panel-head .fw{color:var(--text-2);font-size:12.5px}
+.card{padding:12px 14px;margin-bottom:10px;flex:none}
+.card h2{margin-bottom:8px}
+.card-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+.card-head h2{margin:0}
+.lbl{font-stretch:75%;text-transform:uppercase;letter-spacing:.09em;font-size:11px;color:var(--text-2);font-weight:500}
+.stmt{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.2;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.stmt .sub{flex-basis:100%;font-size:13px;color:var(--text-2);font-weight:400;letter-spacing:0}
+.note{margin-top:8px;padding:8px 10px;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;font-size:13px;background:var(--accent-soft)}
+.note strong{display:block;font-size:14px}
+.note.muted{border-left-color:var(--text-2);background:transparent;color:var(--text-2);padding-left:10px}
+.note.ok{border-left-color:var(--ok)}
+.note.bad{border-left-color:var(--bad)}
+.help{margin-top:8px;color:var(--text-2)}
+.actions{margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rows{display:grid;grid-template-columns:1fr;gap:2px 20px}
+.row{display:grid;grid-template-columns:88px 1fr;align-items:center;min-height:34px;gap:8px}
+.row .k{color:var(--text-2)}
+.row .v{display:flex;align-items:center;gap:8px;font-weight:600;flex-wrap:wrap}
+.dim{color:var(--text-2);font-weight:400}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.95em}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn.quiet{background:transparent;color:var(--text);border:1px solid var(--hair)}
+.btn.danger{background:transparent;color:var(--bad);border:1px solid var(--hair)}
+.btn.sm{padding:5px 10px;font-size:12.5px}
+.btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn[disabled]{opacity:.55;cursor:not-allowed}
+.steps{display:inline-flex;align-items:center;gap:3px;vertical-align:middle}
+.steps i{display:block;width:10px;height:14px;border-radius:2px;border:1px solid var(--text-2)}
+.steps i.on{background:var(--accent);border-color:var(--accent)}
+.steps b{font-weight:600;margin-left:6px;font-size:.95em}
+.steps.sm i{width:6px;height:10px;border-radius:1.5px}
+.steps.sm b{margin-left:4px;font-size:11.5px}
+.swatch{display:inline-block;width:18px;height:18px;border-radius:5px;border:1px solid var(--hair);vertical-align:middle;flex:none}
+.swatch.mix{background:conic-gradient(#ff4d4d,#ffe14d,#4de07a,#3ee0e8,#4d7bff,#b56bff,#ff4d4d)}
+.swatch.none{background:transparent;border-style:dashed}
+.swatch.lg{width:40px;height:40px;border-radius:9px}
+.keygrid{display:inline-grid;grid-template-columns:repeat(14,1fr);gap:1px;padding:3px;border-radius:5px;border:1px solid var(--hair);background:rgba(0,0,0,.25);vertical-align:middle;flex:none}
+.keygrid i{display:block;width:4px;height:4px;border-radius:1px}
+.keygrid.lg i{width:6px;height:6px;border-radius:1.5px}
+.keygrid.fit{width:100%;max-width:84px}
+.keygrid.fit i{width:auto;height:auto;aspect-ratio:1}
+.name-input{background:transparent;border:0;border-bottom:1px solid var(--accent);padding:2px 0;min-width:0;width:100%;font-weight:600;outline:none}
+.count{font-weight:600;color:var(--text-2);font-size:12.5px}
+.count.full{color:var(--text)}
+.link{background:none;border:0;padding:0;color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+
+/* sheets (confirm / result / import) sit over the panel like the app's picker */
+.sheet-wrap{position:absolute;inset:0;background:color-mix(in srgb,var(--bg) 55%,transparent);z-index:5;display:flex;align-items:flex-end;justify-content:center;padding:12px}
+.sheet{background:var(--bg);border:1px solid var(--edge-lo);border-top-color:var(--edge);border-radius:12px;width:min(100%,420px);max-height:100%;overflow:auto;box-shadow:0 18px 40px var(--shadow);padding:14px 16px}
+.sheet h2{font-size:16px;margin-bottom:6px}
+.sheet .body{color:var(--text-2);font-size:13px}
+.sheet .body strong{color:var(--text)}
+.sheet ul.check{list-style:none;margin:8px 0 0;padding:0;display:grid;gap:4px}
+.sheet ul.check li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--hair);border-radius:8px}
+.sheet ul.check li .ok{color:var(--ok);font-weight:600}
+.sheet ul.check li .skip{color:var(--bad);font-weight:600}
+.sheet ul.check li .pend{color:var(--text-2)}
+.toast{position:absolute;left:12px;right:12px;bottom:12px;z-index:6;padding:10px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--edge-lo);border-top-color:var(--edge);box-shadow:0 12px 30px var(--shadow);font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+
+/* ---------- Option 1: shelf ---------- */
+.shelf{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity;margin:0 -2px}
+.shelf::-webkit-scrollbar{height:6px}
+.shelf::-webkit-scrollbar-thumb{background:var(--hair);border-radius:3px}
+.pcard{flex:none;width:104px;scroll-snap-align:start;border:1px solid var(--hair);border-radius:10px;padding:8px;background:transparent;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:6px;color:var(--text)}
+.pcard:hover{background:var(--accent-soft)}
+.pcard[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.pcard .nm{font-weight:600;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard .fx{font-size:11.5px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pcard .st{display:flex;gap:8px}
+.pcard.add{border-style:dashed;justify-content:center;align-items:center;text-align:center;color:var(--text-2);gap:4px}
+.pcard.add .plus{font-size:22px;line-height:1;color:var(--accent)}
+.pcard.add.full{border-style:solid;color:var(--text)}
+.pcard.add.full .plus{display:none}
+.pcard.add small{font-size:11px;line-height:1.25}
+.pcard .big{align-self:center}
+.detail-head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+.detail-head .nm{font-size:16px;font-weight:700;flex:1;min-width:0}
+.detail-head .dt{color:var(--text-2);font-size:12px;white-space:nowrap}
+.card.future{border-style:dashed;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none;color:var(--text-2)}
+.card.future .stmt{font-size:15px;color:var(--text)}
+
+/* ---------- Option 2: list ---------- */
+.plist{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.prow{display:grid;grid-template-columns:22px 1fr auto;align-items:center;gap:10px;padding:7px 6px;border-radius:8px;cursor:pointer;border:1px solid transparent;text-align:left;background:none;width:100%;color:var(--text)}
+.prow:hover{background:var(--accent-soft)}
+.prow[aria-expanded="true"]{border-color:var(--hair);background:color-mix(in srgb,var(--text) 5%,transparent);border-radius:8px 8px 0 0}
+.prow .nm{font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prow .fx{font-size:12px;color:var(--text-2);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.prow .dt{font-size:11.5px;color:var(--text-2);white-space:nowrap}
+.pexp{border:1px solid var(--hair);border-top:0;border-radius:0 0 8px 8px;padding:8px 10px 10px;margin-bottom:4px}
+.pexp .rows{gap:0}
+.pexp .row{min-height:28px}
+.list-foot{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--hair);flex-wrap:wrap}
+.empty{padding:14px 6px;color:var(--text-2)}
+.empty strong{display:block;color:var(--text);font-size:15px;margin-bottom:2px}
+
+/* ---------- Option 3: bank ---------- */
+.bank{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.slot{aspect-ratio:1/1.15;border:1px solid var(--hair);border-radius:9px;padding:6px 5px;background:none;color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;position:relative;min-width:0}
+.slot:hover{background:var(--accent-soft)}
+.slot[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.slot .no{position:absolute;top:4px;left:6px;font-size:10px;font-weight:600;color:var(--text-2);font-stretch:80%}
+.slot .nm{font-size:11px;font-weight:600;width:100%;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot.empty{border-style:dashed;color:var(--text-2)}
+.slot.empty .nm{font-weight:500}
+.slot.empty.target{border-color:var(--accent);border-style:solid;color:var(--text)}
+.slot.empty.target .nm{color:var(--accent);font-weight:600}
+.bank-detail{margin-top:10px;padding-top:10px;border-top:1px solid var(--hair)}
+.mode-bar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px;padding:7px 10px;border-radius:8px;background:var(--accent-soft);font-size:13px}
+
+/* ---------- Option 4: compare ---------- */
+.chooser{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.chip{border:1px solid var(--hair);background:none;color:var(--text);border-radius:20px;padding:4px 10px 4px 5px;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;font-weight:600;max-width:150px}
+.chip .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chip:hover{background:var(--accent-soft)}
+.chip[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.chip .swatch,.chip .keygrid{width:16px;height:16px;border-radius:50%}
+.chip .keygrid{display:inline-block;padding:0;background:repeating-linear-gradient(90deg,#3ee0e8 0 3px,#b56bff 3px 6px,#ffe14d 6px 9px)}
+.panes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pane{border:1px solid var(--hair);border-radius:10px;padding:8px 10px;min-width:0}
+.pane.saved{border-color:var(--accent)}
+.pane h3{font-size:12.5px;font-weight:600;margin-bottom:6px;display:flex;justify-content:space-between;gap:6px;align-items:baseline}
+.pane h3 .lbl{font-size:10px}
+.pane .row{grid-template-columns:auto 1fr;min-height:26px;font-size:12.5px}
+.pane .row .k{font-size:11.5px}
+.pane .row.diff .v{color:var(--accent)}
+.pane .row.diff .k::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:5px;vertical-align:1px}
+.pane .kg{margin-top:6px;display:flex;align-items:center;gap:8px}
+.diffsum{margin-top:8px;font-size:12.5px;color:var(--text-2)}
+.diffsum strong{color:var(--text)}
+
+@container frame (min-width:700px){
+  .rail{width:200px}
+  .glance-item{flex-direction:row;justify-content:flex-start;gap:10px;padding:7px 8px;font-size:12.5px;text-align:left}
+  .glance-item .t{display:block}
+  .glance-item .n{display:none}
+  .nav a{flex-direction:row;justify-content:flex-start;gap:10px;padding:8px 10px;font-size:13px;font-stretch:100%}
+  .rows{grid-template-columns:1fr 1fr}
+  .pexp .rows{grid-template-columns:1fr 1fr 1fr}
+  .bank{grid-template-columns:repeat(5,1fr);gap:8px}
+  .slot{aspect-ratio:auto;min-height:88px}
+  .slot .nm{font-size:12.5px}
+  .panes{gap:12px}
+  .pane .row{min-height:30px;font-size:13.5px}
+  .prow{grid-template-columns:22px 1fr auto auto}
+  .prow .dt{display:block}
+}
+</style>
+</head>
+<body>
+
+<header class="page-head">
+  <h1>Lighting presets — four structures on the Frosted-cards app</h1>
+  <p class="sub">The Lighting screen of the app at <code>apps/web</code>: same tokens, glass recipe, rail and card grammar. A preset is a full snapshot — profile block (effect, per-effect brightness / speed / Colour Mixing), effect-colour block (one RGB per effect) and per-key block (126 × RGB for Custom). Applying writes all three and verifies each; it is the app's first write.</p>
+  <p class="sub">Every option is shown against the same mock: the board currently on Windmill B1 S0; presets stored per keyboard uuid, max 10. Use <strong>Stored</strong> to see the empty, mid and full states; <strong>Link</strong> decides whether Apply can write the colour blocks (on 2.4G they are not yet captured, so the profile is restored and the colours are skipped). Click a preset, then Apply / Rename / Delete; try Save current at 10 of 10 and Import with the cap in the way.</p>
+  <div class="controls">
+    <div class="ctl-group"><span class="k">Option</span>
+      <div class="pseg" id="optTabs">
+        <button data-opt="shelf" aria-pressed="true"><span class="tag">1</span>Shelf</button>
+        <button data-opt="list" aria-pressed="false"><span class="tag">2</span>List</button>
+        <button data-opt="bank" aria-pressed="false"><span class="tag">3</span>Bank of 10</button>
+        <button data-opt="compare" aria-pressed="false"><span class="tag">4</span>Compare</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Stored</span>
+      <div class="pseg" id="countSeg">
+        <button data-count="0" aria-pressed="false">0</button>
+        <button data-count="4" aria-pressed="true">4</button>
+        <button data-count="10" aria-pressed="false">10 (full)</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Link</span>
+      <div class="pseg" id="linkSeg">
+        <button data-link="wired" aria-pressed="true">Wired</button>
+        <button data-link="2.4g" aria-pressed="false">2.4G (colours unwritable)</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Theme</span>
+      <div class="pseg" id="themeSeg">
+        <button data-theme="white" aria-pressed="false">White</button>
+        <button data-theme="dark" aria-pressed="true">Dark</button>
+        <button data-theme="black" aria-pressed="false">Black</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Field</span>
+      <div class="pseg" id="fieldSeg">
+        <button data-field="ambient" aria-pressed="true">Ambient</button>
+        <button data-field="static" aria-pressed="false">Static</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Window</span>
+      <div class="pseg" id="widthSeg">
+        <button data-w="480" aria-pressed="true">480 × 640</button>
+        <button data-w="900" aria-pressed="false">900 × 640</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="opt" data-opt="shelf" data-active>
+  <div class="stage"><div class="frame" id="frame-shelf"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>1 — Preset shelf</h2>
+    <p class="idea">A horizontal strip of swatch-cards at the top of the Lighting screen, above the future live controls. The first card is always the action: "Save current" as a dashed card, which at 10 of 10 turns into a solid "10 of 10 — replace one" card. Selecting a card opens a detail card beneath the shelf with the full readout and Apply / Rename / Delete.</p>
+    <h3>Structure</h3>
+    <ul>
+      <li>Shelf card = name, effect, brightness/speed as small step blocks, and the 40 px recogniser: one swatch, a mixed-hue swatch, or for Custom the 126-key dot grid (14 × 9) — at 40 px the grid is legible enough to tell "WASD red" from "rainbow rows", which three dominant-colour bands are not.</li>
+      <li>Detail card carries the saved date and the three actions; Apply opens the confirm sheet, then the result sheet with the keyboard's read-back per block.</li>
+      <li>Export / Import live in the shelf card's header as quiet buttons; Import over the cap opens a chooser that counts free slots and asks which incoming presets to keep.</li>
+      <li>The controls card below is a dashed "Live controls — Stage 2" placeholder; its place is fixed under the shelf.</li>
+    </ul>
+    <h3>Cap</h3>
+    <ul><li>Never hidden: the action card changes state and copy at 10. Choosing it enters replace mode: tapping any shelf card asks "Replace 'Night' with the current lighting?".</li></ul>
+    <h3>Cost at 480 px</h3>
+    <ul><li>Only three and a half cards are visible; the rest is horizontal scroll, so names past the fourth are out of sight until you scroll. The detail card takes ~150 px of height below the shelf, pushing the future controls down. At 900 all ten fit without scrolling.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="list">
+  <div class="stage"><div class="frame" id="frame-list"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>2 — List with inline readouts</h2>
+    <p class="idea">One card, a vertical list: swatch, name, effect and stages on one row each, saved date at the right, a count in the header. Tapping a row expands it in place (accordion) into the full readout plus Apply / Rename / Delete, so nothing moves elsewhere on the screen. The future controls card sits above the list — controls first, library second.</p>
+    <h3>Structure</h3>
+    <ul>
+      <li>Row recogniser is the 18 px swatch; for Custom, three dominant-colour bands (top three colours by key count, proportional widths) — at 18 px a dot grid is noise, bands still say "mostly red with some cyan". The expanded row shows the full dot grid.</li>
+      <li>Header: "4 of 10" count and Save current; footer: Export all · Import. At 10 the count goes full-weight and Save current stays enabled but opens the replace chooser.</li>
+      <li>Empty state is a sentence with the one useful action, not a blank card.</li>
+    </ul>
+    <h3>Cap</h3>
+    <ul><li>The count is always on screen. Save current at 10 → "10 of 10. Replace one?" with the list itself becoming the target picker (rows show "Replace" on the right). Import at cap → the import sheet shows incoming presets with free slots counted and lets you untick.</li></ul>
+    <h3>Cost at 480 px</h3>
+    <ul><li>Ten rows at ~46 px plus header and footer is ~560 px: the list alone nearly fills the window, so with the controls card above it the presets start below the fold and you scroll to reach them. Expanding a row adds ~130 px. It is the densest option and the least glanceable — colour is one 18 px square per row.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="bank">
+  <div class="stage"><div class="frame" id="frame-bank"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>3 — Bank of ten slots</h2>
+    <p class="idea">Ten fixed slots in a 5 × 2 grid, like a hardware memory bank. Empty slots are visible and numbered, so the cap is the shape of the thing, not a rule that appears later. Save current is a mode: the empty slots light up as "Save here"; at 10 of 10 the full slots do, as "Replace". Selecting a filled slot shows its readout and actions in a detail area under the grid.</p>
+    <h3>Structure</h3>
+    <ul>
+      <li>Slot = number, recogniser, name. Recogniser is the swatch, or for Custom the 126-key dot grid scaled to the slot (84 px wide at 900, the slot's width at 480) — the grid is the point of a bank: you recognise slot 4 by its pattern.</li>
+      <li>Detail area: full rows (effect, colour, stages, mixing, saved date) and Apply / Rename / Delete. Delete frees the slot; slots keep their numbers, so "slot 3" stays meaningful in the export file too.</li>
+      <li>Import maps incoming presets onto free slots in order; when there are not enough, the sheet says how many will not fit and offers to pick.</li>
+    </ul>
+    <h3>Cap</h3>
+    <ul><li>Intrinsic. There is no eleventh slot to hide; the full state reads as "all ten lit".</li></ul>
+    <h3>Cost at 480 px</h3>
+    <ul><li>Five slots across a ~400 px panel gives 72 px slots: names are ellipsised at about nine characters and the dot grid drops to roughly 3 px dots — pattern still readable, individual keys not. The grid plus detail area is ~330 px, leaving ~250 px for the future controls card without scrolling. Two rows of ten is the most compact full state of the four.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="compare">
+  <div class="stage"><div class="frame" id="frame-compare"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>4 — Current vs saved</h2>
+    <p class="idea">Two panes: what the keyboard reports now on the left, the selected preset on the right, with every differing value marked. A chooser strip of chips picks the preset. Apply is the only primary action and it reads as "make the right pane true"; the result sheet then shows the left pane catching up, block by block. Save current is the reverse arrow: snapshot the left pane into a new chip.</p>
+    <h3>Structure</h3>
+    <ul>
+      <li>Panes are the Device screen's own rows (effect, colour, brightness, speed, mixing) plus the per-key grid. Rows that differ get an accent dot and value; a summary line under the panes counts them — "3 of 5 values and the per-key block change".</li>
+      <li>Chips carry only swatch + name; the readout lives in the pane, so ten chips wrap into two lines and stay small.</li>
+      <li>The dongle case is visible before applying: on 2.4G the colour and per-key rows are marked "won't write yet" in the saved pane, so the outcome is predicted, not discovered.</li>
+    </ul>
+    <h3>Cap</h3>
+    <ul><li>Count in the chooser; at 10 the Save current chip turns into "Replace…" and the chips become targets.</li></ul>
+    <h3>Cost at 480 px</h3>
+    <ul><li>Two panes across ~400 px are ~190 px each: labels shrink to 11.5 px and the per-key grid to 4 px dots. Ten chips take two rows (~70 px). Best for deciding whether to apply; worst for browsing, since only one preset's readout is visible at a time. At 900 the panes are roomy and the diff reads at a glance.</li></ul>
+  </aside>
+</section>
+
+</main>
+
+<section class="tokens">
+  <h2>Composited contrast, measured</h2>
+  <p class="sub">Text over the frost card over the field, for the current theme and field, using the app's exact tokens. Now = the mock keyboard state (Windmill B1). Worst = any palette or mixed hue at the cap at brightness 4, or either static endpoint.</p>
+  <table id="tokenTable"></table>
+</section>
+
+<script>
+(() => {
+/* ---------- facts ---------- */
+const MAX = 10;
+const KEYS = 126, COLS = 14;
+const MIXED = new Set(['Dream Rainbow','Windmill','Waterfall','Blooming']);
+const FX_CLASS = {'Off':'fx-off','Custom':'fx-custom','Always On':'fx-solid','Dream Rainbow':'fx-rainbow','One Touch':'fx-reactive','Key Ripple':'fx-reactive','Stars':'fx-stars','Wave':'fx-wave','Shadow':'fx-reactive','Sine Wave':'fx-sine','Windmill':'fx-windmill','Waterfall':'fx-waterfall','Blooming':'fx-bloom'};
+const PALETTE = ['#ff4d4d','#ff9a2e','#ffe14d','#4de07a','#3ee0e8','#4d7bff','#b56bff','#ffffff'];
+const MIX_STOPS = ['#ff4d4d','#ffe14d','#4de07a','#3ee0e8','#4d7bff','#b56bff','#ff9a2e'];
+const LVL = [0,.4,.6,.8,1], DUR = [60,45,30,20,12];
+
+/* per-key mock patterns, 126 slots */
+const perKey = pattern => Array.from({length: KEYS}, (_, i) => {
+  const r = Math.floor(i / COLS), c = i % COLS;
+  if (pattern === 'gaming') {
+    if ((r === 2 && c === 2) || (r === 3 && c >= 1 && c <= 3)) return '#ff4d4d';
+    if (r === 8 && c >= 11) return '#3ee0e8';
+    if (r === 0) return '#ff9a2e';
+    return '#2b2f36';
+  }
+  if (pattern === 'rows') return ['#ff4d4d','#ff9a2e','#ffe14d','#4de07a','#3ee0e8','#4d7bff','#b56bff','#ff4d4d','#ffe14d'][r];
+  return '#3ee0e8';
+});
+const dominant = keys => {
+  const n = new Map(); keys.forEach(k => n.set(k, (n.get(k) || 0) + 1));
+  return [...n.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3).map(([hex, count]) => ({hex, share: count / keys.length}));
+};
+
+const ALL = [
+  {name:'Desk white', effect:'Always On', brightness:4, speed:0, mixing:false, colour:'#ffffff', savedAt:'2026-09-14'},
+  {name:'Night', effect:'Stars', brightness:1, speed:1, mixing:false, colour:'#4d7bff', savedAt:'2026-09-15'},
+  {name:'Rainbow', effect:'Windmill', brightness:3, speed:2, mixing:false, colour:null, savedAt:'2026-09-16'},
+  {name:'Gaming', effect:'Custom', brightness:4, speed:0, mixing:false, colour:null, keys:perKey('gaming'), savedAt:'2026-09-18'},
+  {name:'Wave cyan', effect:'Wave', brightness:2, speed:3, mixing:false, colour:'#3ee0e8', savedAt:'2026-09-18'},
+  {name:'Waterfall', effect:'Waterfall', brightness:3, speed:4, mixing:false, colour:null, savedAt:'2026-09-19'},
+  {name:'Ripple mixed', effect:'Key Ripple', brightness:4, speed:2, mixing:true, colour:'#ff9a2e', savedAt:'2026-09-19'},
+  {name:'Lights off', effect:'Off', brightness:1, speed:0, mixing:false, colour:null, savedAt:'2026-09-20'},
+  {name:'Sine purple', effect:'Sine Wave', brightness:2, speed:1, mixing:false, colour:'#b56bff', savedAt:'2026-09-20'},
+  {name:'Rainbow rows', effect:'Custom', brightness:3, speed:0, mixing:false, colour:null, keys:perKey('rows'), savedAt:'2026-09-21'},
+].map((p, i) => ({...p, id: i + 1}));
+
+const CURRENT = {effect:'Windmill', brightness:1, speed:0, mixing:false, colour:null, keys:null};
+let link = 'wired';
+let storedCount = 4;
+
+/* per-option state */
+const S = {
+  shelf:   {presets: [], sel: null, mode: null, renaming: null},
+  list:    {presets: [], sel: null, mode: null, renaming: null},
+  bank:    {presets: [], sel: null, mode: null, renaming: null},
+  compare: {presets: [], sel: null, mode: null, renaming: null},
+};
+const seed = () => { for (const k in S) { S[k].presets = ALL.slice(0, storedCount).map(p => ({...p})); S[k].sel = null; S[k].mode = null; S[k].renaming = null; } };
+seed();
+
+/* ---------- derived ---------- */
+const kindOf = p => p.effect === 'Off' ? 'none' : p.effect === 'Custom' ? 'perKey' : (MIXED.has(p.effect) || p.mixing) ? 'mixed' : 'single';
+const colourLabel = p => {
+  const k = kindOf(p);
+  if (k === 'none') return 'Lighting off';
+  if (k === 'perKey') return `Per-key · ${KEYS} keys`;
+  if (k === 'mixed') return p.mixing && !MIXED.has(p.effect) ? 'Colour Mixing on' : 'Mixed — set by the effect';
+  return p.colour;
+};
+const swatch = (p, size = '') => {
+  const k = kindOf(p);
+  if (k === 'perKey') {
+    if (size === 'bands') { const d = dominant(p.keys); let acc = 0; const stops = d.map(x => { const s = `${x.hex} ${acc * 100}% ${(acc + x.share) * 100}%`; acc += x.share; return s; }); return `<span class="swatch" style="background:linear-gradient(90deg,${stops.join(',')},${d[d.length-1].hex} ${acc*100}% 100%)" title="dominant colours"></span>`; }
+    return `<span class="keygrid ${size}" role="img" aria-label="per-key colours">${p.keys.map(h => `<i style="background:${h}"></i>`).join('')}</span>`;
+  }
+  if (k === 'mixed') return `<span class="swatch mix ${size}"></span>`;
+  if (k === 'none') return `<span class="swatch none ${size}"></span>`;
+  return `<span class="swatch ${size}" style="background:${p.colour}"></span>`;
+};
+const steps = (v, min, max, cls = '') => { let c = ''; for (let i = min; i <= max; i++) c += `<i class="${i <= v ? 'on' : ''}"></i>`; return `<span class="steps ${cls}" role="img" aria-label="${v} of ${min}–${max}">${c}<b>${v}</b></span>`; };
+const fmtDate = d => new Date(d + 'T12:00').toLocaleDateString(undefined, {day:'numeric', month:'short'});
+const readoutRows = (p, extra = '') => `
+  <div class="rows ${extra}">
+    <div class="row"><span class="k">Effect</span><span class="v">${p.effect}</span></div>
+    <div class="row"><span class="k">Colour</span><span class="v">${swatch(p)}<span class="${kindOf(p) === 'single' ? 'mono' : 'dim'}">${colourLabel(p)}</span></span></div>
+    <div class="row"><span class="k">Brightness</span><span class="v">${steps(p.brightness, 1, 4)}</span></div>
+    <div class="row"><span class="k">Speed</span><span class="v">${steps(p.speed, 0, 4)}</span></div>
+  </div>`;
+const nameOrInput = (k, p) => S[k].renaming === p.id
+  ? `<input class="name-input" data-rename="${p.id}" value="${p.name}" maxlength="24" aria-label="Preset name">`
+  : `<span class="nm">${p.name}</span>`;
+const actions = (k, p) => `
+  <div class="actions">
+    <button type="button" class="btn" data-act="apply" data-id="${p.id}">Apply to keyboard</button>
+    <button type="button" class="btn quiet sm" data-act="rename" data-id="${p.id}">Rename</button>
+    <button type="button" class="btn danger sm" data-act="delete" data-id="${p.id}">Delete</button>
+  </div>`;
+const countTag = st => `<span class="count ${st.presets.length >= MAX ? 'full' : ''}">${st.presets.length} of ${MAX}</span>`;
+
+/* ---------- shared chrome ---------- */
+const I = {
+  device:'<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 14h10"/></svg>',
+  light:'<svg class="ic" viewBox="0 0 24 24"><path d="M12 3v2M4.9 6.9l1.4 1.4M3 13h2M19 13h2M17.7 8.3l1.4-1.4"/><path d="M8 17a5 5 0 1 1 8 0v2H8z"/><path d="M10 21h4"/></svg>',
+  keys:'<svg class="ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h2M11 10h2M15 10h2M7 14h10"/></svg>',
+  macro:'<svg class="ic" viewBox="0 0 24 24"><path d="M5 7h14M5 12h9M5 17h11"/><circle cx="19" cy="17" r="2"/></svg>',
+  settings:'<svg class="ic" viewBox="0 0 24 24"><path d="M4 7h9M18 7h2M4 17h4M13 17h7"/><circle cx="15.5" cy="7" r="2.5"/><circle cx="10.5" cy="17" r="2.5"/></svg>',
+  plug:'<svg class="ic" viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0z"/><path d="M12 16v5"/></svg>',
+  radio:'<svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="13" r="1.5"/><path d="M8.5 9.5a5 5 0 0 0 0 7M15.5 9.5a5 5 0 0 1 0 7M5.6 6.6a9 9 0 0 0 0 12.8M18.4 6.6a9 9 0 0 1 0 12.8"/></svg>',
+};
+const battSvg = wireless => wireless
+  ? `<svg class="batt" viewBox="0 0 34 16" width="26" height="12" aria-label="Battery 100 percent"><rect x=".75" y=".75" width="28.5" height="14.5" rx="3" fill="none" stroke="var(--text-2)" stroke-width="1.5"/><rect x="31" y="5" width="3" height="6" rx="1" fill="var(--text-2)"/><rect x="2.75" y="2.75" width="25" height="10.5" rx="1.5" fill="var(--ok)"/></svg>`
+  : `<svg class="batt" viewBox="0 0 34 16" width="26" height="12" aria-label="Battery not reported"><rect x=".75" y=".75" width="28.5" height="14.5" rx="3" fill="none" stroke="var(--text-2)" stroke-width="1.5" stroke-dasharray="3 2.5"/><rect x="31" y="5" width="3" height="6" rx="1" fill="var(--text-2)"/><path d="M12 4v3M18 4v3M10.5 7h9v2a4.5 4.5 0 0 1-9 0z" fill="none" stroke="var(--text-2)" stroke-width="1.5" stroke-linecap="round"/></svg>`;
+const rail = () => {
+  const wireless = link === '2.4g';
+  return `<aside class="rail glass">
+    <div class="glance">
+      <div class="glance-item">${wireless ? I.radio : I.plug}<span class="n">${wireless ? '2.4G' : 'Wired'}</span><span class="t">${wireless ? '2.4G wireless' : 'Wired'}</span></div>
+      <div class="glance-item">${battSvg(wireless)}<span class="n">${wireless ? '100%' : 'n/a'}</span><span class="t">${wireless ? '100 % · full' : 'Battery n/a on cable'}</span></div>
+      <div class="glance-item">${swatch(CURRENT)}<span class="n">Windmill</span><span class="t">Windmill</span></div>
+    </div>
+    <nav class="nav"><a href="#">${I.device}Device</a><a href="#" aria-current="page">${I.light}Lighting</a><a href="#">${I.keys}Keys</a><a href="#">${I.macro}Macros</a><span class="spacer"></span><a href="#">${I.settings}Settings</a></nav>
+  </aside>`;
+};
+const field = () => `<div class="field ${FX_CLASS[CURRENT.effect]}" style="--c:transparent;--lvl:${LVL[CURRENT.brightness]};--dur:${DUR[CURRENT.speed]}s"><div class="amb"></div></div>`;
+const future = () => `<section class="card glass future"><h2 class="lbl">Live controls</h2><p class="stmt">Effect, colour, brightness, speed — Stage 2</p><p class="help">This card is the place for the live lighting controls; presets do not move when it arrives.</p></section>`;
+
+/* ---------- option 1: shelf ---------- */
+const renderShelf = k => {
+  const st = S[k]; const full = st.presets.length >= MAX; const sel = st.presets.find(p => p.id === st.sel);
+  const cards = st.presets.map(p => `
+    <button type="button" class="pcard" data-sel="${p.id}" aria-pressed="${p.id === st.sel}" title="${p.name}">
+      <span class="big">${swatch(p, 'lg')}</span>
+      <span class="nm">${st.mode === 'replace' ? 'Replace?' : p.name}</span>
+      <span class="fx">${p.effect}</span>
+      <span class="st">${steps(p.brightness, 1, 4, 'sm')}${steps(p.speed, 0, 4, 'sm')}</span>
+    </button>`).join('');
+  const add = full
+    ? `<button type="button" class="pcard add full" data-act="save"><span class="nm">${MAX} of ${MAX}</span><small>Save current by replacing one — tap, then pick a card</small></button>`
+    : `<button type="button" class="pcard add" data-act="save"><span class="plus">+</span><span class="nm">Save current</span><small>${st.presets.length} of ${MAX} used</small></button>`;
+  return `
+    <section class="card glass">
+      <div class="card-head"><h2 class="lbl">Presets</h2><span class="actions" style="margin:0"><button type="button" class="btn quiet sm" data-act="export">Export</button><button type="button" class="btn quiet sm" data-act="import">Import</button></span></div>
+      ${st.mode === 'replace' ? `<div class="mode-bar"><span>Pick a preset to replace with the current lighting</span><button type="button" class="link" data-act="cancelmode">Cancel</button></div>` : ''}
+      <div class="shelf">${add}${cards}</div>
+      ${st.presets.length === 0 ? `<p class="help">Nothing saved for this keyboard yet. Save current keeps what the board is doing now — Windmill, brightness 1, speed 0 — as "Preset 1".</p>` : ''}
+    </section>
+    ${sel ? `<section class="card glass">
+      <div class="detail-head">${swatch(sel, 'lg')}<div style="flex:1;min-width:0">${nameOrInput(k, sel)}<div class="dt">Saved ${fmtDate(sel.savedAt)}${sel.mixing ? ' · Colour Mixing on' : ''}</div></div></div>
+      ${readoutRows(sel)}
+      ${actions(k, sel)}
+    </section>` : ''}
+    ${future()}`;
+};
+
+/* ---------- option 2: list ---------- */
+const renderList = k => {
+  const st = S[k]; const full = st.presets.length >= MAX;
+  const rows = st.presets.map(p => `
+    <li>
+      <button type="button" class="prow" data-sel="${p.id}" aria-expanded="${p.id === st.sel}">
+        ${swatch(p, 'bands')}
+        <span style="min-width:0"><span class="nm">${st.mode === 'replace' ? `Replace “${p.name}”` : p.name}</span><span class="fx">${p.effect}${steps(p.brightness, 1, 4, 'sm')}${steps(p.speed, 0, 4, 'sm')}</span></span>
+        <span class="dt">${fmtDate(p.savedAt)}</span>
+      </button>
+      ${p.id === st.sel && st.mode !== 'replace' ? `<div class="pexp">
+        ${st.renaming === p.id ? `<div style="margin-bottom:6px">${nameOrInput(k, p)}</div>` : ''}
+        ${readoutRows(p)}
+        ${kindOf(p) === 'perKey' ? `<div class="pane"><div class="kg" style="margin:0">${swatch(p, 'lg')}<span class="dim">126 per-key colours</span></div></div>` : ''}
+        ${actions(k, p)}
+      </div>` : ''}
+    </li>`).join('');
+  return `
+    ${future()}
+    <section class="card glass">
+      <div class="card-head"><h2 class="lbl">Presets ${countTag(st)}</h2><button type="button" class="btn sm" data-act="save">${full ? 'Save current — replace…' : 'Save current'}</button></div>
+      ${st.mode === 'replace' ? `<div class="mode-bar"><span>${MAX} of ${MAX}. Pick the preset to replace.</span><button type="button" class="link" data-act="cancelmode">Cancel</button></div>` : ''}
+      ${st.presets.length ? `<ul class="plist">${rows}</ul>` : `<div class="empty"><strong>No presets for this keyboard</strong>Save current keeps the board's lighting as it is now — Windmill, brightness 1, speed 0 — as "Preset 1". Presets from other boards are not shown here.</div>`}
+      <div class="list-foot"><span class="dim">Stored for uuid <span class="mono">0300…0197</span></span><span class="actions" style="margin:0"><button type="button" class="btn quiet sm" data-act="export">Export all</button><button type="button" class="btn quiet sm" data-act="import">Import</button></span></div>
+    </section>`;
+};
+
+/* ---------- option 3: bank ---------- */
+const renderBank = k => {
+  const st = S[k]; const full = st.presets.length >= MAX; const sel = st.presets.find(p => p.id === st.sel);
+  const bySlot = new Map(st.presets.map((p, i) => [p.slot ?? i + 1, p]));
+  const slots = Array.from({length: MAX}, (_, i) => i + 1).map(n => {
+    const p = bySlot.get(n);
+    if (!p) return `<button type="button" class="slot empty ${st.mode === 'save' ? 'target' : ''}" data-slot="${n}"><span class="no">${n}</span><span class="swatch lg none"></span><span class="nm">${st.mode === 'save' ? 'Save here' : 'Empty'}</span></button>`;
+    return `<button type="button" class="slot" data-sel="${p.id}" aria-pressed="${p.id === st.sel}" title="${p.name} — ${p.effect}"><span class="no">${n}</span>${kindOf(p) === 'perKey' ? swatch(p, 'fit') : swatch(p, 'lg')}<span class="nm">${st.mode === 'replace' ? 'Replace' : p.name}</span></button>`;
+  }).join('');
+  return `
+    <section class="card glass">
+      <div class="card-head"><h2 class="lbl">Preset bank ${countTag(st)}</h2><span class="actions" style="margin:0"><button type="button" class="btn sm" data-act="save">${full ? 'Save current — replace…' : 'Save current'}</button></span></div>
+      ${st.mode === 'save' ? `<div class="mode-bar"><span>Pick an empty slot for the current lighting</span><button type="button" class="link" data-act="cancelmode">Cancel</button></div>` : ''}
+      ${st.mode === 'replace' ? `<div class="mode-bar"><span>All ${MAX} slots are full. Pick one to replace.</span><button type="button" class="link" data-act="cancelmode">Cancel</button></div>` : ''}
+      <div class="bank">${slots}</div>
+      ${sel ? `<div class="bank-detail">
+        <div class="detail-head"><div style="flex:1;min-width:0">${nameOrInput(k, sel)}<div class="dt">Slot ${sel.slot ?? st.presets.indexOf(sel) + 1} · saved ${fmtDate(sel.savedAt)}${sel.mixing ? ' · Colour Mixing on' : ''}</div></div></div>
+        ${readoutRows(sel)}
+        ${actions(k, sel)}
+      </div>` : st.presets.length === 0 ? `<p class="help">Ten slots, all empty. Save current puts the board's lighting — Windmill, brightness 1, speed 0 — into a slot you pick.</p>` : ''}
+      <div class="list-foot"><span class="dim">Slots keep their numbers</span><span class="actions" style="margin:0"><button type="button" class="btn quiet sm" data-act="export">Export</button><button type="button" class="btn quiet sm" data-act="import">Import</button></span></div>
+    </section>
+    ${future()}`;
+};
+
+/* ---------- option 4: compare ---------- */
+const renderCompare = k => {
+  const st = S[k]; const full = st.presets.length >= MAX; const sel = st.presets.find(p => p.id === st.sel);
+  const chips = st.presets.map(p => `<button type="button" class="chip" data-sel="${p.id}" aria-pressed="${p.id === st.sel}">${kindOf(p) === 'perKey' ? '<span class="keygrid"></span>' : swatch(p)}<span class="nm">${st.mode === 'replace' ? 'Replace' : p.name}</span></button>`).join('');
+  const wireless = link === '2.4g';
+  const row = (label, valueHtml, diff = false, wont = false) => `<div class="row ${diff ? 'diff' : ''}"><span class="k">${label}</span><span class="v">${valueHtml}${wont ? '<span class="dim">won’t write on 2.4G</span>' : ''}</span></div>`;
+  const paneRows = (p, isSaved) => {
+    const d = f => isSaved && CURRENT[f] !== p[f];
+    const colourDiff = isSaved && colourLabel(CURRENT) !== colourLabel(p);
+    const keysHtml = p.keys ? swatch(p, '') : `<span class="keygrid" style="opacity:.5" title="per-key block unchanged">${Array.from({length: KEYS}, () => '<i style="background:var(--text-2)"></i>').join('')}</span>`;
+    return `
+    ${row('Effect', p.effect, d('effect'))}
+    ${row('Colour', `${swatch(p)}<span class="${kindOf(p) === 'single' ? 'mono' : 'dim'}">${colourLabel(p)}</span>`, colourDiff, isSaved && wireless && kindOf(p) === 'single')}
+    ${row('Bright', steps(p.brightness, 1, 4, 'sm'), d('brightness'))}
+    ${row('Speed', steps(p.speed, 0, 4, 'sm'), d('speed'))}
+    ${row('Mixing', p.mixing ? 'On' : 'Off', d('mixing'))}
+    <div class="kg">${keysHtml}<span class="dim" style="font-size:11.5px">${p.keys ? '126 per-key' + (isSaved && wireless ? ' · won’t write on 2.4G' : '') : 'per-key as is'}</span></div>`;
+  };
+  let diffs = 0;
+  if (sel) { diffs = ['effect','brightness','speed','mixing'].filter(f => CURRENT[f] !== sel[f]).length + (colourLabel(CURRENT) !== colourLabel(sel) ? 1 : 0); }
+  return `
+    <section class="card glass">
+      <div class="card-head"><h2 class="lbl">Presets ${countTag(st)}</h2><button type="button" class="btn quiet sm" data-act="save">${full ? 'Replace one with current…' : '← Save current'}</button></div>
+      ${st.mode === 'replace' ? `<div class="mode-bar"><span>${MAX} of ${MAX}. Pick the chip to replace.</span><button type="button" class="link" data-act="cancelmode">Cancel</button></div>` : ''}
+      ${st.presets.length ? `<div class="chooser">${chips}</div>` : `<div class="empty"><strong>No presets for this keyboard</strong>The left pane is what the board reports now. Save current turns it into the first chip.</div>`}
+      <div class="panes">
+        <div class="pane"><h3>Keyboard now <span class="lbl">reported</span></h3>${paneRows(CURRENT, false)}</div>
+        <div class="pane ${sel ? 'saved' : ''}"><h3>${sel ? nameOrInput(k, sel) : 'Saved'} <span class="lbl">${sel ? fmtDate(sel.savedAt) : 'pick a chip'}</span></h3>${sel ? paneRows(sel, true) : '<p class="help" style="margin-top:0">Select a preset to see what Apply would change.</p>'}</div>
+      </div>
+      ${sel ? `<p class="diffsum"><strong>${diffs} of 5 values</strong>${sel.keys ? ' and the per-key block' : ''} change on Apply${wireless && (kindOf(sel) === 'single' || sel.keys) ? ' — colour blocks will be skipped on 2.4G' : ''}.</p>${actions(k, sel)}` : ''}
+      <div class="list-foot"><span class="dim">Stored for this keyboard only</span><span class="actions" style="margin:0"><button type="button" class="btn quiet sm" data-act="export">Export all</button><button type="button" class="btn quiet sm" data-act="import">Import</button></span></div>
+    </section>
+    ${future()}`;
+};
+
+/* ---------- sheets ---------- */
+const sheet = (k, html) => { const w = document.createElement('div'); w.className = 'sheet-wrap'; w.innerHTML = `<div class="sheet" role="dialog">${html}</div>`; w.addEventListener('click', e => { if (e.target === w) w.remove(); }); frames[k].appendChild(w); return w; };
+const toast = (k, text) => { frames[k].querySelectorAll('.toast').forEach(t => t.remove()); const t = document.createElement('div'); t.className = 'toast'; t.setAttribute('role', 'status'); t.innerHTML = `<span>${text}</span><button type="button" class="link" data-close>Dismiss</button>`; t.querySelector('[data-close]').onclick = () => t.remove(); frames[k].appendChild(t); };
+
+const confirmApply = (k, p) => {
+  const wireless = link === '2.4g';
+  const blocks = [['Profile block', 'effect, brightness, speed, mixing', true], ['Effect colours', '13 × RGB', !wireless], ['Per-key colours', '126 × RGB', !wireless]];
+  const w = sheet(k, `
+    <h2>Apply “${p.name}” to the keyboard?</h2>
+    <p class="body">This is a write. The board's current lighting — <strong>${CURRENT.effect}, brightness ${CURRENT.brightness}, speed ${CURRENT.speed}</strong> — is not saved anywhere and will be overwritten.</p>
+    <ul class="check">${blocks.map(([n, d, ok]) => `<li><span><strong>${n}</strong> <span class="dim">${d}</span></span><span class="${ok ? 'pend' : 'skip'}">${ok ? 'will write' : 'skipped on 2.4G'}</span></li>`).join('')}</ul>
+    ${wireless ? `<div class="note" style="margin-top:10px"><strong>Colours can't be written over the dongle yet</strong>Only the profile block will be restored. Effect and per-key colours stay as they are now.</div>` : ''}
+    <div class="actions"><button type="button" class="btn" data-go>Apply</button><button type="button" class="btn quiet" data-savefirst>Save current first</button><button type="button" class="btn quiet" data-cancel>Cancel</button></div>`);
+  w.querySelector('[data-cancel]').onclick = () => w.remove();
+  w.querySelector('[data-savefirst]').onclick = () => { w.remove(); doSave(k); };
+  w.querySelector('[data-go]').onclick = () => { w.remove(); resultApply(k, p); };
+};
+const resultApply = (k, p) => {
+  const wireless = link === '2.4g';
+  const colourOk = !wireless;
+  const rep = {effect: p.effect, brightness: p.brightness, speed: p.speed, mixing: p.mixing, colour: colourOk ? p.colour : CURRENT.colour};
+  const kind = kindOf(p);
+  const colourLine = kind === 'single' ? (colourOk ? `<span class="swatch" style="background:${p.colour}"></span> <span class="mono">${p.colour}</span>` : `<span class="swatch none"></span> unchanged (was not written)`) : colourLabel(p);
+  const w = sheet(k, `
+    <h2>${colourOk ? 'Applied' : 'Profile applied — colours skipped'}</h2>
+    <p class="body">Read back from the keyboard after the write:</p>
+    <ul class="check">
+      <li><span><strong>Profile</strong> <span class="dim">${rep.effect} · B${rep.brightness} S${rep.speed} · mixing ${rep.mixing ? 'on' : 'off'}</span></span><span class="ok">verified</span></li>
+      <li><span><strong>Effect colours</strong> <span class="dim">${colourLine}</span></span><span class="${colourOk ? 'ok' : 'skip'}">${colourOk ? 'verified' : 'skipped'}</span></li>
+      <li><span><strong>Per-key colours</strong> <span class="dim">${p.keys ? (colourOk ? '126 keys' : 'previous block kept') : 'not part of this effect'}</span></span><span class="${colourOk ? 'ok' : 'skip'}">${colourOk ? 'verified' : 'skipped'}</span></li>
+    </ul>
+    ${colourOk ? '' : `<div class="note bad" style="margin-top:10px"><strong>The keyboard is now ${rep.effect} at brightness ${rep.brightness}, but in its previous colour</strong>Plug in over USB and apply again to write the colour blocks; the preset itself is intact.</div>`}
+    <div class="actions"><button type="button" class="btn" data-ok>Done</button></div>`);
+  w.querySelector('[data-ok]').onclick = () => w.remove();
+};
+const confirmDelete = (k, p) => {
+  const w = sheet(k, `<h2>Delete “${p.name}”?</h2><p class="body">The keyboard is not touched; only the saved snapshot goes. There is no undo — Export first if you want a copy.</p><div class="actions"><button type="button" class="btn danger" data-go>Delete</button><button type="button" class="btn quiet" data-cancel>Cancel</button></div>`);
+  w.querySelector('[data-cancel]').onclick = () => w.remove();
+  w.querySelector('[data-go]').onclick = () => { w.remove(); const st = S[k]; st.presets = st.presets.filter(x => x.id !== p.id); if (st.sel === p.id) st.sel = null; render(k); toast(k, `Deleted “${p.name}”.`); };
+};
+const nextId = () => Math.max(0, ...Object.values(S).flatMap(s => s.presets.map(p => p.id)), ...ALL.map(p => p.id)) + 1;
+const snapshot = (slot) => ({...CURRENT, id: nextId(), name: `Preset ${slot ?? ''}`.trim(), savedAt: '2026-09-21', slot});
+const doSave = k => {
+  const st = S[k];
+  if (st.presets.length >= MAX) { st.mode = 'replace'; render(k); return; }
+  if (k === 'bank') { st.mode = 'save'; render(k); return; }
+  const p = snapshot(); p.name = `Preset ${st.presets.length + 1}`;
+  st.presets.push(p); st.sel = p.id; st.renaming = p.id; render(k);
+  frames[k].querySelector('[data-rename]')?.select();
+  toast(k, `Saved the current lighting as “${p.name}” — ${st.presets.length} of ${MAX}. Type to rename.`);
+};
+const doReplace = (k, target) => {
+  const st = S[k];
+  const w = sheet(k, `<h2>Replace “${target.name}” with the current lighting?</h2><p class="body">The snapshot of <strong>${target.effect}, B${target.brightness} S${target.speed}</strong> from ${fmtDate(target.savedAt)} is discarded and “${target.name}” becomes <strong>${CURRENT.effect}, B${CURRENT.brightness} S${CURRENT.speed}</strong>. The keyboard is not touched.</p><div class="actions"><button type="button" class="btn" data-go>Replace</button><button type="button" class="btn quiet" data-cancel>Cancel</button></div>`);
+  w.querySelector('[data-cancel]').onclick = () => { w.remove(); st.mode = null; render(k); };
+  w.querySelector('[data-go]').onclick = () => { w.remove(); const i = st.presets.findIndex(p => p.id === target.id); st.presets[i] = {...snapshot(target.slot), id: target.id, name: target.name}; st.mode = null; st.sel = target.id; render(k); toast(k, `“${target.name}” now holds the current lighting.`); };
+};
+const doImport = k => {
+  const st = S[k]; const free = MAX - st.presets.length;
+  const incoming = [ALL[4], ALL[8], ALL[9]].map(p => ({...p, id: nextId() + Math.random()}));
+  const w = sheet(k, `
+    <h2>Import ${incoming.length} presets</h2>
+    <p class="body">From <span class="mono">presets-K1PRO.json</span>, saved for this keyboard's uuid. ${free >= incoming.length ? `<strong>${free} slots free</strong> — all fit.` : free === 0 ? `<strong>No slots free</strong> (${MAX} of ${MAX}). Untick ${incoming.length} or delete some first — or replace: each import can take the place of an existing preset.` : `<strong>${free} slot${free === 1 ? '' : 's'} free</strong> for ${incoming.length} presets. Untick ${incoming.length - free} or replace existing ones.`}</p>
+    <ul class="check">${incoming.map((p, i) => `<li><label style="display:flex;gap:8px;align-items:center;flex:1;cursor:pointer"><input type="checkbox" data-i="${i}" ${i < free ? 'checked' : ''}>${kindOf(p) === 'perKey' ? swatch(p, 'bands') : swatch(p)}<span><strong>${p.name}</strong> <span class="dim">${p.effect} · B${p.brightness} S${p.speed}</span></span></label>${free === 0 || i >= free ? `<button type="button" class="link" data-replace="${i}">replace…</button>` : ''}</li>`).join('')}</ul>
+    <p class="body" style="margin-top:8px" data-tally></p>
+    <div class="actions"><button type="button" class="btn" data-go>Import ticked</button><button type="button" class="btn quiet" data-cancel>Cancel</button></div>`);
+  const tally = () => { const n = [...w.querySelectorAll('input:checked')].length; const el = w.querySelector('[data-tally]'); const over = n - free; el.innerHTML = over > 0 ? `<strong style="color:var(--bad)">${n} ticked, ${free} free — ${over} too many.</strong>` : `${n} ticked, ${free - n} slot${free - n === 1 ? '' : 's'} left after.`; w.querySelector('[data-go]').disabled = over > 0; };
+  w.querySelectorAll('input').forEach(i => i.onchange = tally); tally();
+  w.querySelectorAll('[data-replace]').forEach(b => b.onclick = () => { w.remove(); st.mode = 'replace'; render(k); toast(k, 'Pick which preset the import replaces.'); });
+  w.querySelector('[data-cancel]').onclick = () => w.remove();
+  w.querySelector('[data-go]').onclick = () => { const picks = [...w.querySelectorAll('input:checked')].map(i => incoming[+i.dataset.i]); w.remove(); picks.forEach(p => st.presets.push({...p, id: nextId(), slot: undefined})); render(k); toast(k, `Imported ${picks.length} — ${st.presets.length} of ${MAX}.`); };
+};
+
+/* ---------- wiring ---------- */
+const renderers = {shelf: renderShelf, list: renderList, bank: renderBank, compare: renderCompare};
+const frames = {}; for (const k in renderers) frames[k] = document.getElementById('frame-' + k);
+const render = k => {
+  frames[k].style.setProperty('--c-glow', '#b56bff');
+  frames[k].innerHTML = `<div class="app">${field()}${rail()}<main class="panel"><header class="panel-head"><strong>Lighting</strong><span class="fw">Mercury K1 PRO</span></header>${renderers[k](k)}</main></div>`;
+};
+for (const k in frames) {
+  render(k);
+  frames[k].addEventListener('click', e => {
+    const st = S[k];
+    const selBtn = e.target.closest('[data-sel]');
+    const actBtn = e.target.closest('[data-act]');
+    const slotBtn = e.target.closest('[data-slot]');
+    if (e.target.closest('.name-input')) return;
+    if (selBtn) {
+      const id = +selBtn.dataset.sel; const p = st.presets.find(x => x.id === id);
+      if (st.mode === 'replace') { doReplace(k, p); return; }
+      st.sel = st.sel === id && k !== 'compare' ? null : id; st.renaming = null; render(k); return;
+    }
+    if (slotBtn && st.mode === 'save') { const p = snapshot(+slotBtn.dataset.slot); st.presets.push(p); st.presets.sort((a, b) => (a.slot ?? 99) - (b.slot ?? 99)); st.sel = p.id; st.mode = null; st.renaming = p.id; render(k); frames[k].querySelector('[data-rename]')?.select(); toast(k, `Saved into slot ${p.slot} — type to rename.`); return; }
+    if (!actBtn) return;
+    const id = +actBtn.dataset.id; const p = st.presets.find(x => x.id === id);
+    switch (actBtn.dataset.act) {
+      case 'apply': confirmApply(k, p); break;
+      case 'rename': st.renaming = id; render(k); frames[k].querySelector('[data-rename]')?.select(); break;
+      case 'delete': confirmDelete(k, p); break;
+      case 'save': doSave(k); break;
+      case 'cancelmode': st.mode = null; render(k); break;
+      case 'export': toast(k, `Exported ${st.presets.length} preset${st.presets.length === 1 ? '' : 's'} → presets-K1PRO-2026-09-21.json (uuid inside, so another board will refuse it).`); break;
+      case 'import': doImport(k); break;
+    }
+  });
+  frames[k].addEventListener('keydown', e => {
+    const inp = e.target.closest('[data-rename]'); if (!inp) return;
+    if (e.key === 'Enter') { const st = S[k]; const p = st.presets.find(x => x.id === +inp.dataset.rename); p.name = inp.value.trim() || p.name; st.renaming = null; render(k); }
+    if (e.key === 'Escape') { S[k].renaming = null; render(k); }
+  });
+  frames[k].addEventListener('focusout', e => {
+    const inp = e.target.closest?.('[data-rename]'); if (!inp) return;
+    const st = S[k]; const p = st.presets.find(x => x.id === +inp.dataset.rename); if (!p) return;
+    p.name = inp.value.trim() || p.name; st.renaming = null; render(k);
+  });
+}
+
+/* page controls */
+let activeOpt = 'shelf';
+const tabs = document.getElementById('optTabs');
+tabs.addEventListener('click', e => { const b = e.target.closest('[data-opt]'); if (!b) return; activeOpt = b.dataset.opt; tabs.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); document.querySelectorAll('.opt').forEach(o => o.toggleAttribute('data-active', o.dataset.opt === activeOpt)); });
+document.addEventListener('keydown', e => { if (e.target.matches('input,textarea')) return; const i = ['1','2','3','4'].indexOf(e.key); if (i >= 0) tabs.querySelectorAll('button')[i].click(); });
+const countSeg = document.getElementById('countSeg');
+countSeg.addEventListener('click', e => { const b = e.target.closest('[data-count]'); if (!b) return; storedCount = +b.dataset.count; countSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); seed(); Object.keys(frames).forEach(render); });
+const linkSeg = document.getElementById('linkSeg');
+linkSeg.addEventListener('click', e => { const b = e.target.closest('[data-link]'); if (!b) return; link = b.dataset.link; linkSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); Object.keys(frames).forEach(render); });
+const widthSeg = document.getElementById('widthSeg'); const rulers = document.querySelectorAll('[data-ruler]');
+const setWidth = w => { document.documentElement.style.setProperty('--frame-w', w + 'px'); widthSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.w === String(w))); rulers.forEach(r => r.textContent = `${w} × 640 px window`); };
+widthSeg.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if (b) setWidth(+b.dataset.w); });
+setWidth(480);
+const themeSeg = document.getElementById('themeSeg');
+themeSeg.addEventListener('click', e => { const b = e.target.closest('[data-theme]'); if (!b) return; document.documentElement.dataset.theme = b.dataset.theme; themeSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderTokens(); });
+const fieldSeg = document.getElementById('fieldSeg');
+fieldSeg.addEventListener('click', e => { const b = e.target.closest('[data-field]'); if (!b) return; document.documentElement.dataset.field = b.dataset.field; fieldSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b)); renderTokens(); });
+
+/* composited contrast over the frost card */
+const parseColor = str => { str = str.trim(); if (str[0] === '#') return [1,3,5].map(i => parseInt(str.slice(i, i + 2), 16)).concat([1]); const p = str.match(/rgba?\(([^)]+)\)/)[1].split(/[\s,\/]+/).filter(Boolean).map(Number); return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1]; };
+const lin = c => { c /= 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; };
+const lum = rgb => .2126 * lin(rgb[0]) + .7152 * lin(rgb[1]) + .0722 * lin(rgb[2]);
+const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+const over = (top, a, bot) => bot.slice(0, 3).map((c, i) => c * (1 - a) + top[i] * a);
+const renderTokens = () => {
+  const cs = getComputedStyle(document.documentElement); const val = n => cs.getPropertyValue(n).trim();
+  const bg = parseColor(val('--bg')), cap = parseFloat(val('--cap')), fill = parseColor(val('--glass-frost'));
+  const isStatic = document.documentElement.dataset.field === 'static';
+  const ends = [parseColor(val('--static-a')), parseColor(val('--static-b'))];
+  const amb = (hexes, lvl) => hexes.map(h => over(parseColor(h), cap * lvl, bg));
+  const nowF = isStatic ? ends : amb(MIX_STOPS, LVL[CURRENT.brightness]);
+  const worstF = isStatic ? ends : amb(PALETTE.concat(MIX_STOPS), 1);
+  const comp = f => over(fill, fill[3], f);
+  const rows = [['--text', 'body text, names, values'], ['--text-2', 'secondary: labels, dates, effect lines'], ['--accent', 'accent as text: diff values, links']].map(([v, why]) => {
+    const fg = parseColor(val(v)); const now = Math.min(...nowF.map(f => ratio(fg, comp(f)))); const worst = Math.min(...worstF.map(f => ratio(fg, comp(f))));
+    const px = worstF.map(comp).sort((a, b) => ratio(fg, a) - ratio(fg, b))[0].map(Math.round);
+    const cell = r => `<td class="${r >= 4.5 ? 'pass' : 'fail'}">${r.toFixed(2)} : 1${r >= 4.5 ? '' : ' — below 4.5'}</td>`;
+    return `<tr><td><span class="sw" style="background:${val(v)}"></span><code>${v}</code></td><td>${why}</td><td>card <code>${val('--glass-frost')}</code> over field</td><td><span class="sw" style="background:rgb(${px})"></span>rgb(${px.join(', ')})</td>${cell(now)}${cell(worst)}</tr>`;
+  }).join('');
+  document.getElementById('tokenTable').innerHTML = `<thead><tr><th>Foreground</th><th>Used for</th><th>Surface (${document.documentElement.dataset.theme}, ${isStatic ? 'static' : 'ambient'})</th><th>Worst composited pixel</th><th>Now</th><th>Worst</th></tr></thead><tbody>${rows}</tbody>`;
+};
+renderTokens();
+})();
+</script>
+</body>
+</html>

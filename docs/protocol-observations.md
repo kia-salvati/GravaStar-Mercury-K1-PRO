@@ -39,9 +39,27 @@ first write into an all-zero block seeds its ten-key preset (29 bytes) — not a
 `04 00 00 01 00 80 00` profile · `0a 00 00 00 00 00 02` light colour (byte 3 is **00**) ·
 `06 00 00 01 00 7a 01` per-key. Each is stored per write in `WiredDialect.WRITES`.
 
-### Wireless colour writes: not captured
-Both colour blocks were only ever written over cable. `WirelessDialect.writeFrames` refuses
-`LightColor` and `CustomColor` until a dongle capture shows their opcodes.
+### Wireless colour writes — session 7, dongle, 2026-09-21 — *capture*
+Fixture: `packages/protocol/test/fixtures/session-7-dongle-colour.jsonl` (1819 frames).
+
+**Dongle write opcode = read opcode & 0x0f**: profile `04`/`44`, light colour `09`/`49`,
+per-key `02`/`42`. The light-colour block goes out as 512 bytes (37 packets, last carrying 8)
+with the same `5a a5` trailer as cable; the per-key block is 378 bytes **padded to 506** on the
+wire (37 packets, last carrying 2). Both reproduced byte-for-byte by `WirelessDialect.writeFrames`.
+
+The vendor app writes the light-colour block from its **localStorage cache**, not from a fresh
+read — its dongle write differed from the preceding read in a packet the user never touched.
+Ours reads fresh before every write.
+
+### Sleep timer — session 7 — *capture*
+Profile **byte 24, in half-minutes, 0 = off**. Toggling and setting the timer in the vendor UI
+moved exactly that byte: `02` (the "1 minute" the overview showed) → `08` → `13` (= 19 = 9.5 min)
+→ `00` (off) → `13`. The vendor UI offers 0.5–20 min. `codec/sleep.ts`; wireless only in effect.
+
+### The 2.4G link interleaves stale replies
+The first two `49` requests in session 7 were followed only by late `42` packets from an earlier
+read. A request with no reply of its own opcode is therefore treated as lost and re-sent, up to
+the attempt budget, rather than failed on first silence.
 
 ## Capture session 4 — cable, 2026-09-21 — *capture*
 
