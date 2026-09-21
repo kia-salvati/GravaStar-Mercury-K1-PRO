@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
 import { applyLighting, decodeLighting } from '../src/codec/lighting.js'
-import { K916 } from '../src/device.js'
+import { K916, KeyboardBusyError } from '../src/device.js'
 import { WriteCommand, type ReplyPacket } from '../src/dialect/dialect.js'
 import { WiredDialect } from '../src/dialect/wired.js'
 import { WirelessDialect } from '../src/dialect/wireless.js'
@@ -176,7 +176,7 @@ test('a write frame whose shape was never captured is still refused', async () =
   await expect(transport.sendOutputReport(0x13, frame)).rejects.toThrow(/unexpected frame/)
 })
 
-test('a packet whose echo never comes is re-sent, then given up on with a clear error', async () => {
+test('a write whose echoes never come is re-sent as a burst, then given up on naming every packet', async () => {
   // A transport that accepts sends but never acknowledges anything.
   const silent = new MockTransport(CAPTURE, DONGLE)
   const original = silent.sendOutputReport.bind(silent)
@@ -187,6 +187,85 @@ test('a packet whose echo never comes is re-sent, then given up on with a clear 
   }
   const kb = await K916.connect(silent, { ...FAST, maxAttempts: 3 })
 
-  await expect(kb.setLighting({ brightness: 2 })).rejects.toThrow(/packet 0 not acknowledged after 3 attempt/)
-  expect(sends).toBe(3)
+  await expect(kb.setLighting({ brightness: 2 })).rejects.toThrow(/packet\(s\) 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 not acknowledged after 3 attempt/)
+  expect(sends).toBe(30)   // 3 bursts of 10, pipelined — not 3 × 10 sequential waits
+})
+
+test('only the packets whose echo was lost are re-sent', async () => {
+  // Drop the echo of packet 4 on the first burst only.
+  const lossy = new MockTransport(CAPTURE, DONGLE)
+  const original = lossy.sendOutputReport.bind(lossy)
+  let firstBurst = true
+  const sent: number[] = []
+  lossy.sendOutputReport = async (reportId, data) => {
+    if (data[0] !== 0x04) return original(reportId, data)
+    sent.push(data[2]!)
+    const swallow = firstBurst && data[2] === 4   // no echo, and the simulator never sees it
+    if (data[2] === 9) firstBurst = false          // the first burst ends with packet 9
+    if (swallow) return
+    return original(reportId, data)
+  }
+  const kb = await K916.connect(lossy, FAST)
+
+  await expect(kb.setLighting({ brightness: 2 })).resolves.toMatchObject({ brightness: 2 })
+  expect(sent).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 4])   // one full burst, then just packet 4
+})
+
+// ---- spam protection ---------------------------------------------------------------------------
+
+test('a write requested while another is in flight is refused at once, not queued', async () => {
+  const transport = new MockTransport(CAPTURE, DONGLE)
+  const kb = await K916.connect(transport, FAST)
+
+  const first = kb.setLighting({ brightness: 3 })
+  expect(kb.busy).toBe(true)
+  const spam = [kb.setLighting({ brightness: 1 }), kb.setEffectColour({ r: 1, g: 2, b: 3 }, 1), kb.writeProfile(new Uint8Array(128))]
+
+  for (const attempt of spam) await expect(attempt).rejects.toBeInstanceOf(KeyboardBusyError)
+  await expect(first).resolves.toMatchObject({ brightness: 3 })
+  expect(kb.busy).toBe(false)
+
+  // Exactly one write happened; the spam sent nothing.
+  expect(transport.writes.filter((w) => w[0] === 0x04)).toHaveLength(10)
+  expect(decodeLighting(transport.writtenProfile!).brightness).toBe(3)
+})
+
+test('the click after the current operation answers goes through', async () => {
+  const transport = new MockTransport(CAPTURE, DONGLE)
+  const kb = await K916.connect(transport, FAST)
+
+  await kb.setLighting({ brightness: 3 })
+  await expect(kb.setLighting({ brightness: 1 })).resolves.toMatchObject({ brightness: 1 })
+})
+
+test('reads queue behind an operation in flight, in order', async () => {
+  const transport = new MockTransport(CAPTURE, DONGLE)
+  const kb = await K916.connect(transport, FAST)
+  const order: string[] = []
+
+  const write = kb.setLighting({ brightness: 3 }).then(() => order.push('write'))
+  const read = kb.readLighting().then((l) => order.push(`read:${l.brightness}`))
+  await Promise.all([write, read])
+
+  expect(order).toEqual(['write', 'read:3'])
+})
+
+test('the read queue is capped so nothing can grow without bound', async () => {
+  const transport = new MockTransport(CAPTURE, DONGLE)
+  const kb = await K916.connect(transport, FAST)
+
+  const attempts = Array.from({ length: 12 }, () => kb.readLighting())
+  const outcomes = await Promise.allSettled(attempts)
+  const refused = outcomes.filter((o) => o.status === 'rejected' && /too many operations pending/.test(String(o.reason)))
+  expect(refused.length).toBeGreaterThan(0)
+  expect(outcomes.filter((o) => o.status === 'fulfilled').length).toBe(12 - refused.length)
+})
+
+test('a refused write does not disturb the operation in flight', async () => {
+  const transport = new MockTransport(CAPTURE, DONGLE)
+  const kb = await K916.connect(transport, FAST)
+
+  const inFlight = kb.setLighting({ brightness: 2 })
+  await expect(kb.setLighting({ brightness: 20 })).rejects.toBeInstanceOf(KeyboardBusyError)   // busy wins over range
+  await expect(inFlight).resolves.toMatchObject({ brightness: 2 })
 })

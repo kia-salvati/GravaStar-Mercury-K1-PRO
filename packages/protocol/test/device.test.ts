@@ -126,11 +126,12 @@ test('an unobserved frame never reaches the transport', async () => {
   expect(String(refusal)).toMatch(/unexpected frame/)
 })
 
-test('times out rather than hanging when replies never come', async () => {
+test('a request that draws no reply is re-sent, then fails clearly rather than hanging', async () => {
   const silent = CONNECT.split('\n').slice(0, 3).join('\n')   // identity only
-  const kb = await K916.connect(dongle(silent + '\n{"t":9,"dir":"out:output","reportId":19,"bytes":"41 00 00 00","label":"x"}'), { ...FAST, timeoutMs: 20 })
+  const request = '{"t":9,"dir":"out:output","reportId":19,"bytes":"41 00 00 00","label":"x"}'
+  const kb = await K916.connect(dongle(silent + '\n' + request + '\n' + request), { ...FAST, timeoutMs: 20, maxAttempts: 2 })
 
-  await expect(kb.readKeymap(Layer.Default)).rejects.toThrow(/timed out/)
+  await expect(kb.readKeymap(Layer.Default)).rejects.toThrow(/incomplete after 2 attempt\(s\), no packets at all/)
 })
 
 // ---- wired ------------------------------------------------------------------------------------
@@ -186,4 +187,20 @@ test('close stops power notifications', async () => {
   await Promise.resolve()
 
   expect(seen).toEqual([])
+})
+
+test('a failed identity send during readPower rejects once, with no unhandled power rejection', async () => {
+  const unhandled: unknown[] = []
+  const onUnhandled = (reason: unknown) => unhandled.push(reason)
+  process.on('unhandledRejection', onUnhandled)
+  try {
+    const silent = CONNECT.split('\n').slice(0, 3).join('\n')   // identity only — no second identity exchange
+    const kb = await K916.connect(dongle(silent), { ...FAST, timeoutMs: 20, maxAttempts: 1 })
+
+    await expect(kb.readPower()).rejects.toThrow(/unexpected frame/)
+    await new Promise((r) => setTimeout(r, 60))   // past the power wait
+    expect(unhandled.map(String)).toEqual([])
+  } finally {
+    process.off('unhandledRejection', onUnhandled)
+  }
 })

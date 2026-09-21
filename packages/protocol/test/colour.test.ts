@@ -174,8 +174,65 @@ test('backup covers all three blocks and restore puts every one of them back', a
   expect((await kb.readKeyColours())[2]).toEqual(keyColour(backup.customColour, 2))
 })
 
-test('colour writes over the dongle are refused until captured — the opcode is not guessed', () => {
+// ---- dongle: verified against session-7-dongle-colour.jsonl ----------------------------------------
+
+const DONGLE_COLOUR = readFileSync('test/fixtures/session-7-dongle-colour.jsonl', 'utf8')
+const DONGLE = { vendorId: 0x3554, productId: 0xfa09 }
+
+/** Every complete write burst of one opcode in the capture: its packets in send order. */
+function dongleWriteBursts(opcode: number): string[][] {
+  const bursts: string[][] = []
+  let current: string[] | undefined
+  for (const event of parseCapture(DONGLE_COLOUR)) {
+    if (event.dir !== 'out:output') continue
+    const bytes = bytesOf(event)
+    if (bytes[0] !== opcode) continue
+    if (bytes[2] === 0) bursts.push((current = []))
+    current?.push(event.bytes)
+  }
+  return bursts.filter((b) => b.length === bytesOf({ ...parseCapture(DONGLE_COLOUR)[0]!, bytes: b[0]! })[1])
+}
+
+test('GOLDEN: the dongle light-colour write is 37 packets of opcode 0x09 and we reproduce every one', () => {
+  const bursts = dongleWriteBursts(0x09)
+  expect(bursts.length).toBeGreaterThanOrEqual(1)
   const wireless = new WirelessDialect()
-  expect(() => wireless.writeFrames(WriteCommand.LightColor, new Uint8Array(512))).toThrow(/not been captured/)
-  expect(() => wireless.writeFrames(WriteCommand.CustomColor, new Uint8Array(378))).toThrow(/not been captured/)
+  for (const burst of bursts) {
+    expect(burst).toHaveLength(37)
+    const payload = new Uint8Array(512)
+    for (const frame of burst) {
+      const bytes = bytesOf({ ...parseCapture(DONGLE_COLOUR)[0]!, bytes: frame })
+      payload.set(bytes.subarray(4, 4 + (bytes[3]! & 0x0f)), bytes[2]! * 14)
+    }
+    wireless.writeFrames(WriteCommand.LightColor, payload).forEach((frame, i) => expect(hex(frame), `packet ${i}`).toBe(burst[i]))
+  }
+})
+
+test('GOLDEN: the dongle per-key write is 37 packets of opcode 0x02, the 378-byte block padded to 506', () => {
+  const [burst] = dongleWriteBursts(0x02)
+  expect(burst).toHaveLength(37)
+  const wireless = new WirelessDialect()
+  const payload = new Uint8Array(378)
+  for (const frame of burst!) {
+    const bytes = bytesOf({ ...parseCapture(DONGLE_COLOUR)[0]!, bytes: frame })
+    const start = bytes[2]! * 14
+    if (start < 378) payload.set(bytes.subarray(4, 4 + Math.min(bytes[3]! & 0x0f, 378 - start)), start)
+  }
+  wireless.writeFrames(WriteCommand.CustomColor, payload).forEach((frame, i) => expect(hex(frame), `packet ${i}`).toBe(burst![i]))
+})
+
+test('setEffectColour and setKeyColour work over the dongle on the simulator', async () => {
+  const transport = new MockTransport(DONGLE_COLOUR, DONGLE)
+  // The capture's first two 0x49 requests are followed only by stale 0x42 packets from an
+  // earlier read — the real link interleaves — so this exercises the silent-attempt retry.
+  const kb = await K916.connect(transport, { burstIdleMs: 5, ackTimeoutMs: 5, timeoutMs: 20 })
+
+  await expect(kb.setEffectColour({ r: 0x12, g: 0x34, b: 0x56 }, 1)).resolves.toEqual({ r: 0x12, g: 0x34, b: 0x56 })
+  await expect(kb.setKeyColour(35, { r: 9, g: 8, b: 7 })).resolves.toEqual({ r: 9, g: 8, b: 7 })
+  expect(transport.writes.filter((w) => w[0] === 0x09)).toHaveLength(37)
+  expect(transport.writes.filter((w) => w[0] === 0x02)).toHaveLength(37)
+})
+
+test('a payload longer than the dongle wire length is refused', () => {
+  expect(() => new WirelessDialect().writeFrames(WriteCommand.CustomColor, new Uint8Array(507))).toThrow(/maximum 506/)
 })

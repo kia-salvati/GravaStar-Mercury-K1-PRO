@@ -28,9 +28,15 @@ export class WirelessDialect implements Dialect {
     [Command.LightColor]: 0x49,
   }
 
-  /** Only the profile write has been captured on the dongle; the colour blocks were written over cable. */
-  static readonly WRITE_OPCODES: Readonly<Partial<Record<WriteCommand, number>>> = {
-    [WriteCommand.Profile]: 0x04,
+  /**
+   * Write opcode = read opcode & 0x0f, and the wire length of each block — the per-key block is
+   * 378 bytes but the vendor pads it to 506 on the dongle (37 packets, the last carrying 2).
+   * All three observed in session-7-dongle-colour.
+   */
+  static readonly WRITES: Readonly<Record<WriteCommand, { opcode: number; length: number }>> = {
+    [WriteCommand.Profile]: { opcode: 0x04, length: 128 },
+    [WriteCommand.LightColor]: { opcode: 0x09, length: 512 },
+    [WriteCommand.CustomColor]: { opcode: 0x02, length: 506 },
   }
 
   static readonly CHUNK_DATA_BYTES = 14
@@ -58,20 +64,21 @@ export class WirelessDialect implements Dialect {
    * 10 packets, the last declaring its real length (2) and zero-padded to the frame.
    */
   writeFrames(command: WriteCommand, payload: Uint8Array): Bytes[] {
-    const opcode = WirelessDialect.WRITE_OPCODES[command]
-    if (opcode === undefined) {
-      throw new Error(`wireless ${command} has not been captured from the vendor app; refusing to guess its opcode`)
+    const { opcode, length: wireLength } = WirelessDialect.WRITES[command]
+    if (payload.length > wireLength) {
+      throw new RangeError(`${command} payload is ${payload.length} bytes, maximum ${wireLength}`)
     }
-    const chunk = WirelessDialect.CHUNK_DATA_BYTES
-    const total = Math.ceil(payload.length / chunk)
-    if (total > 0xff) throw new RangeError(`payload of ${payload.length} bytes needs ${total} packets, maximum 255`)
+    const padded = new Uint8Array(wireLength)
+    padded.set(payload)
 
+    const chunk = WirelessDialect.CHUNK_DATA_BYTES
+    const total = Math.ceil(wireLength / chunk)
     const frames: Bytes[] = []
     for (let index = 0; index < total; index++) {
-      const length = Math.min(chunk, payload.length - index * chunk)
+      const length = Math.min(chunk, wireLength - index * chunk)
       const frame = new Uint8Array(FRAME_BYTES)
       frame.set([opcode, total, index, length])
-      frame.set(payload.subarray(index * chunk, (index + 1) * chunk), 4)
+      frame.set(padded.subarray(index * chunk, index * chunk + length), 4)
       frame[FRAME_BODY_BYTES] = checksum(this.reportId, frame.subarray(0, FRAME_BODY_BYTES))
       frames.push(frame)
     }

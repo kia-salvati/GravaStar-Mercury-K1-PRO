@@ -2,12 +2,33 @@ import { decodeIdentity } from './codec/identity.js'
 import { decodeKeymap, Layer, type KeyBinding } from './codec/keymap.js'
 import { decodeKeyColours, effectColour, keyColour, lightColourWriteBlock, withEffectColour, withKeyColour, type RGB } from './codec/colour.js'
 import { applyLighting, decodeLighting, type LightingChange, type LightingState } from './codec/lighting.js'
+import { applySleep, decodeSleep, type SleepTimer } from './codec/sleep.js'
 import { decodePower, isPowerPacket, type PowerState } from './codec/power.js'
 import { Command, missingIndices, reassemble, WriteCommand, type Dialect, type ReplyPacket, type RequestArgs } from './dialect/dialect.js'
 import type { Bytes } from './frame.js'
 import { connectionTypeFor, dialectFor, type ConnectionType } from './dialect/select.js'
 import { modelForUuid, type Capabilities, type Model } from './models.js'
 import type { Transport } from './transport/transport.js'
+
+/** How many times a read-back is retried before a mismatch is believed. */
+const READ_BACK_ATTEMPTS = 3
+/** Reads may queue behind an operation in flight, but never more than this many. */
+const MAX_QUEUED_READS = 8
+
+/**
+ * Thrown — synchronously rejected, never queued — when a write is requested while another
+ * operation is in flight. A UI shows this as "busy"; the user's next click after the current
+ * operation answers goes through. This is what stops a held-down button from lining up a
+ * minute of writes.
+ */
+export class KeyboardBusyError extends Error {
+  constructor(operation: string) {
+    super(`keyboard is busy; ${operation} was not started`)
+    this.name = 'KeyboardBusyError'
+  }
+}
+/** The settle wait never blocks longer than this, however chatty the link. */
+const SETTLE_CAP_MS = 300
 
 export interface DeviceInfo {
   uuid: string
@@ -24,14 +45,23 @@ export interface Backup {
 }
 
 export interface ConnectOptions {
-  /** How long to wait for the first packet of a reply before giving up. The vendor app uses 3000 ms. */
+  /**
+   * How long to wait for the first packet of a reply before treating the request as lost and
+   * re-sending. Real replies land within ~20 ms; a long wait here is what made lost requests
+   * feel slow. The vendor app uses 3000 ms but fires six copies without waiting.
+   */
   timeoutMs?: number
   /** Silence this long after the last packet means the burst is over; missing packets get re-requested. */
   burstIdleMs?: number
-  /** How many times a bulk read is re-sent to fill gaps. The vendor app fires the same read up to six times. */
+  /** How many times a bulk read or write is re-sent to fill gaps. The vendor app fires the same read up to six times. */
   maxAttempts?: number
-  /** How long to wait for a write packet's echo before re-sending it. Captured echoes arrived within ~20 ms. */
+  /** After the last echo of a write burst, silence this long means the burst is over; unacked packets get re-sent. */
   ackTimeoutMs?: number
+  /**
+   * Before each request, wait until the link has been quiet this long — the 2.4G link delivers
+   * stale packets from earlier exchanges late, and a fresh request must not inherit them.
+   */
+  settleMs?: number
   /** A frame that arrived but failed to parse. Never thrown — a listener has nowhere to throw to. */
   onFrameError?: (error: Error) => void
 }
@@ -65,7 +95,12 @@ export class K916 {
   readonly #burstIdleMs: number
   readonly #maxAttempts: number
   readonly #ackTimeoutMs: number
+  readonly #settleMs: number
   readonly #onFrameError: (error: Error) => void
+  /** Operations run one at a time: two overlapping exchanges on one link steal each other's packets. */
+  #queue: Promise<unknown> = Promise.resolve()
+  /** In flight plus queued. Writes refuse to start when this is non-zero; reads refuse past the cap. */
+  #pending = 0
   readonly #powerHandlers = new Set<(state: PowerState) => void>()
   readonly #unsubscribeAmbient: () => void
   #model: Model | undefined
@@ -76,10 +111,11 @@ export class K916 {
     this.#transport = transport
     this.#dialect = dialect
     this.#connection = connection
-    this.#timeoutMs = options.timeoutMs ?? 3000
-    this.#burstIdleMs = options.burstIdleMs ?? 150
+    this.#timeoutMs = options.timeoutMs ?? 500
+    this.#burstIdleMs = options.burstIdleMs ?? 80
     this.#maxAttempts = options.maxAttempts ?? 6
-    this.#ackTimeoutMs = options.ackTimeoutMs ?? 300
+    this.#ackTimeoutMs = options.ackTimeoutMs ?? 150
+    this.#settleMs = options.settleMs ?? 40
     this.#onFrameError = options.onFrameError ?? ((error) => console.warn('[k916] unparseable frame:', error.message))
     this.#unsubscribeAmbient = transport.onInputReport((reportId, data) => this.#onAmbientFrame(reportId, data))
   }
@@ -112,10 +148,21 @@ export class K916 {
    * Battery is not broadcast; the keyboard pushes it once after answering an identity request.
    * So a refresh is: ask for identity again, wait for the power packet that follows.
    */
-  async readPower(): Promise<PowerState> {
-    const next = this.#nextPower()
-    await this.#read(Command.Identity)
-    return next
+  /**
+   * Battery is not broadcast; the keyboard pushes it once after answering an identity request.
+   * So a refresh is: ask for identity again, wait for the power packet that follows.
+   */
+  readPower(): Promise<PowerState> {
+    return this.#exclusive(async () => {
+      // Subscribe before sending so the packet cannot slip past. Mark the wait as handled right
+      // away: if the send fails (or is slow to fail), the wait can expire first, and a rejection
+      // with no handler attached yet is reported as unhandled. The caller still gets it via the
+      // return below when the send succeeds.
+      const next = this.#nextPower()
+      next.catch(() => undefined)
+      await this.#read(Command.Identity)
+      return next
+    })
   }
 
   subscribePower(handler: (state: PowerState) => void): () => void {
@@ -125,20 +172,20 @@ export class K916 {
     }
   }
 
-  async readKeymap(layer: Layer): Promise<KeyBinding[]> {
-    return decodeKeymap(await this.#read(Command.Keymap, { layer }))
+  readKeymap(layer: Layer): Promise<KeyBinding[]> {
+    return this.#exclusive(async () => decodeKeymap(await this.#read(Command.Keymap, { layer })))
   }
 
-  async readAllLayers(): Promise<Record<Layer, KeyBinding[]>> {
-    return {
-      [Layer.Default]: await this.readKeymap(Layer.Default),
-      [Layer.Fn]: await this.readKeymap(Layer.Fn),
-      [Layer.Fn1]: await this.readKeymap(Layer.Fn1),
-    }
+  readAllLayers(): Promise<Record<Layer, KeyBinding[]>> {
+    return this.#exclusive(async () => ({
+      [Layer.Default]: decodeKeymap(await this.#read(Command.Keymap, { layer: Layer.Default })),
+      [Layer.Fn]: decodeKeymap(await this.#read(Command.Keymap, { layer: Layer.Fn })),
+      [Layer.Fn1]: decodeKeymap(await this.#read(Command.Keymap, { layer: Layer.Fn1 })),
+    }))
   }
 
-  async readLighting(): Promise<LightingState> {
-    return decodeLighting(await this.#read(Command.Profile))
+  readLighting(): Promise<LightingState> {
+    return this.#exclusive(async () => decodeLighting(await this.#read(Command.Profile)))
   }
 
   /**
@@ -146,33 +193,47 @@ export class K916 {
    * sequence — then read it again and confirm the keyboard kept what we sent. Returns the
    * state as the keyboard now reports it, not as we intended it.
    */
-  async setLighting(change: LightingChange): Promise<LightingState> {
-    const readBack = await this.#modify(Command.Profile, WriteCommand.Profile, (current) =>
-      applyLighting(current, change, this.capabilities.lighting),
+  setLighting(change: LightingChange): Promise<LightingState> {
+    return this.#exclusiveWrite('setLighting', async () =>
+      decodeLighting(await this.#modify(Command.Profile, WriteCommand.Profile, (current) => applyLighting(current, change, this.capabilities.lighting))),
     )
-    return decodeLighting(readBack)
+  }
+
+  /** Idle time before the keyboard sleeps. Wireless only — the cable ignores it. */
+  readSleepTimer(): Promise<SleepTimer> {
+    return this.#exclusive(async () => decodeSleep(await this.#read(Command.Profile)))
+  }
+
+  setSleepTimer(minutes: number | null): Promise<SleepTimer> {
+    return this.#exclusiveWrite('setSleepTimer', async () => decodeSleep(await this.#modify(Command.Profile, WriteCommand.Profile, (current) => applySleep(current, minutes))))
   }
 
   /** The single colour an effect uses when not mixing. Defaults to the current effect. */
-  async readEffectColour(effectId?: number): Promise<RGB> {
-    const id = effectId ?? (await this.readLighting()).effectId
-    return effectColour(await this.#read(Command.LightColor), id)
+  readEffectColour(effectId?: number): Promise<RGB> {
+    return this.#exclusive(async () => {
+      const id = effectId ?? decodeLighting(await this.#read(Command.Profile)).effectId
+      return effectColour(await this.#read(Command.LightColor), id)
+    })
   }
 
-  async setEffectColour(rgb: RGB, effectId?: number): Promise<RGB> {
-    const id = effectId ?? (await this.readLighting()).effectId
-    const readBack = await this.#modify(Command.LightColor, WriteCommand.LightColor, (current) => withEffectColour(current, id, rgb))
-    return effectColour(readBack, id)
+  setEffectColour(rgb: RGB, effectId?: number): Promise<RGB> {
+    return this.#exclusiveWrite('setEffectColour', async () => {
+      const id = effectId ?? decodeLighting(await this.#read(Command.Profile)).effectId
+      const readBack = await this.#modify(Command.LightColor, WriteCommand.LightColor, (current) => withEffectColour(current, id, rgb))
+      return effectColour(readBack, id)
+    })
   }
 
   /** Per-key colours for the Custom effect, indexed by keymap slot. */
-  async readKeyColours(): Promise<RGB[]> {
-    return decodeKeyColours(await this.#read(Command.CustomColor))
+  readKeyColours(): Promise<RGB[]> {
+    return this.#exclusive(async () => decodeKeyColours(await this.#read(Command.CustomColor)))
   }
 
-  async setKeyColour(slot: number, rgb: RGB): Promise<RGB> {
-    const readBack = await this.#modify(Command.CustomColor, WriteCommand.CustomColor, (current) => withKeyColour(current, slot, rgb))
-    return keyColour(readBack, slot)
+  setKeyColour(slot: number, rgb: RGB): Promise<RGB> {
+    return this.#exclusiveWrite('setKeyColour', async () => {
+      const readBack = await this.#modify(Command.CustomColor, WriteCommand.CustomColor, (current) => withKeyColour(current, slot, rgb))
+      return keyColour(readBack, slot)
+    })
   }
 
   /**
@@ -180,55 +241,95 @@ export class K916 {
    * A backup that covered only the profile would leave colour edits in place — the colour blocks
    * are separate, and the vendor app writes each on its own.
    */
-  async backup(): Promise<Backup> {
-    return {
+  backup(): Promise<Backup> {
+    return this.#exclusive(async () => ({
       profile: await this.#read(Command.Profile),
       lightColour: await this.#read(Command.LightColor),
       customColour: await this.#read(Command.CustomColor),
-    }
+    }))
   }
 
   /** Writes all three blocks back verbatim and confirms each by read-back. */
-  async restore(backup: Backup): Promise<void> {
-    await this.#modify(Command.Profile, WriteCommand.Profile, () => backup.profile)
-    await this.#modify(Command.LightColor, WriteCommand.LightColor, () => lightColourWriteBlock(backup.lightColour))
-    await this.#modify(Command.CustomColor, WriteCommand.CustomColor, () => Uint8Array.from(backup.customColour))
+  restore(backup: Backup): Promise<void> {
+    return this.#exclusiveWrite('restore', async () => {
+      await this.#modify(Command.Profile, WriteCommand.Profile, () => backup.profile)
+      await this.#modify(Command.LightColor, WriteCommand.LightColor, () => lightColourWriteBlock(backup.lightColour))
+      await this.#modify(Command.CustomColor, WriteCommand.CustomColor, () => Uint8Array.from(backup.customColour))
+    })
   }
 
   /** Writes a complete 128-byte profile verbatim. Prefer `restore()` for a full backup. */
-  async writeProfile(profile: Uint8Array): Promise<void> {
-    await this.#write(WriteCommand.Profile, profile)
+  writeProfile(profile: Uint8Array): Promise<void> {
+    return this.#exclusiveWrite('writeProfile', () => this.#write(WriteCommand.Profile, profile))
+  }
+
+  /** Raw payloads whose layout is not decoded yet. Kept raw rather than guessed. */
+  readMacrosRaw(): Promise<Uint8Array> {
+    return this.#exclusive(() => this.#read(Command.Macros))
+  }
+
+  readProfileRaw(): Promise<Uint8Array> {
+    return this.#exclusive(() => this.#read(Command.Profile))
+  }
+
+  readLightColorRaw(): Promise<Uint8Array> {
+    return this.#exclusive(() => this.#read(Command.LightColor))
+  }
+
+  /** True while any operation is in flight or queued. A UI can disable write controls on this. */
+  get busy(): boolean {
+    return this.#pending > 0
+  }
+
+  /**
+   * Reads queue behind whatever is in flight, up to a cap. A failure does not block the next one.
+   */
+  #exclusive<T>(operation: () => Promise<T>): Promise<T> {
+    if (this.#pending >= MAX_QUEUED_READS) {
+      return Promise.reject(new Error(`too many operations pending (${this.#pending}); the keyboard cannot keep up`))
+    }
+    return this.#enqueue(operation)
+  }
+
+  /**
+   * Writes never queue: if anything is in flight, the caller gets KeyboardBusyError at once and
+   * nothing is sent. The click after the current operation answers is the one that goes through.
+   */
+  #exclusiveWrite<T>(name: string, operation: () => Promise<T>): Promise<T> {
+    if (this.#pending > 0) return Promise.reject(new KeyboardBusyError(name))
+    return this.#enqueue(operation)
+  }
+
+  #enqueue<T>(operation: () => Promise<T>): Promise<T> {
+    this.#pending++
+    const run = this.#queue.then(operation, operation).finally(() => {
+      this.#pending--
+    })
+    this.#queue = run.catch(() => undefined)
+    return run
   }
 
   /**
    * Read a block, transform it, write it, read it again, and confirm every byte we sent came
    * back. The comparison covers the bytes the read returns; a write may legitimately be longer
    * than its read (the light-colour block is 512 out, 483 back).
+   *
+   * A mismatch is re-read before it is believed: on the 2.4G link, packets from the pre-write
+   * read can arrive late and merge into the read-back with stale bytes.
    */
   async #modify(read: Command, write: WriteCommand, transform: (current: Uint8Array) => Uint8Array): Promise<Uint8Array> {
     const current = await this.#read(read)
     const next = transform(current)
     await this.#write(write, next)
 
-    const readBack = await this.#read(read)
-    const mismatch = [...readBack].findIndex((byte, i) => byte !== next[i])
-    if (mismatch !== -1) {
-      throw new Error(`${write} not retained: byte ${mismatch} is ${readBack[mismatch]}, sent ${next[mismatch]}`)
+    let mismatch = -1
+    let readBack = next
+    for (let attempt = 1; attempt <= READ_BACK_ATTEMPTS; attempt++) {
+      readBack = await this.#read(read)
+      mismatch = [...readBack].findIndex((byte, i) => byte !== next[i])
+      if (mismatch === -1) return readBack
     }
-    return readBack
-  }
-
-  /** Raw payloads whose layout is not decoded yet. Kept raw rather than guessed. */
-  async readMacrosRaw(): Promise<Uint8Array> {
-    return this.#read(Command.Macros)
-  }
-
-  async readProfileRaw(): Promise<Uint8Array> {
-    return this.#read(Command.Profile)
-  }
-
-  async readLightColorRaw(): Promise<Uint8Array> {
-    return this.#read(Command.LightColor)
+    throw new Error(`${write} not retained: byte ${mismatch} is ${readBack[mismatch]}, sent ${next[mismatch]}`)
   }
 
   close(): void {
@@ -259,6 +360,7 @@ export class K916 {
     let total: number | undefined
 
     for (let attempt = 1; attempt <= this.#maxAttempts; attempt++) {
+      await this.#settle()
       await this.#sendAndCollect(command, args, opcode, packets, (packet) => (total ??= packet.total))
       if (total !== undefined && missingIndices(packets, total).length === 0) {
         return reassemble(packets, total)
@@ -269,7 +371,10 @@ export class K916 {
     throw new Error(`${command}: incomplete after ${this.#maxAttempts} attempt(s), ${missing}`)
   }
 
-  /** One send; resolves when the reply burst completes or goes idle. Rejects only on a total silence. */
+  /**
+   * One send; resolves when the reply burst completes or goes idle — including total silence,
+   * which on the 2.4G link just means the request itself was lost and the caller should re-send.
+   */
   #sendAndCollect(
     command: Command,
     args: RequestArgs | undefined,
@@ -279,13 +384,11 @@ export class K916 {
   ): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       let total: number | undefined
-      let received = 0
       let unsubscribe = () => {}
 
       const onSilence = (): void => {
         unsubscribe()
-        if (received === 0) reject(new Error(`${command}: timed out after ${this.#timeoutMs} ms with no reply`))
-        else resolve()
+        resolve()
       }
       let timer = setTimeout(onSilence, this.#timeoutMs)
 
@@ -299,7 +402,6 @@ export class K916 {
         }
         if (packet.opcode !== opcode) return
 
-        received++
         total ??= packet.total
         onPacket(packet)
         if (!packets.has(packet.index)) packets.set(packet.index, packet)
@@ -322,10 +424,10 @@ export class K916 {
   }
 
   /**
-   * Wireless writes go one packet at a time: send, wait for the keyboard's echo, then the next.
-   * A packet whose echo never arrives is re-sent, up to the same attempt budget as reads.
    * Wired writes are a single feature report the keyboard never acknowledges; the read-back in
-   * setLighting is the confirmation on both paths.
+   * #modify is the confirmation. Wireless writes are pipelined the way the vendor app sends
+   * them: every packet goes out back-to-back, the echoes are collected, and only the packets
+   * whose echo never came are re-sent — the same index-merge discipline as reads, mirrored.
    */
   async #write(command: WriteCommand, payload: Uint8Array): Promise<void> {
     const frames = this.#dialect.writeFrames(command, payload)
@@ -333,23 +435,30 @@ export class K916 {
       for (const frame of frames) await this.#transport.sendFeatureReport(this.#dialect.reportId, frame)
       return
     }
-    for (const frame of frames) await this.#sendAcked(command, frame)
-  }
 
-  async #sendAcked(command: WriteCommand, frame: Bytes): Promise<void> {
+    const pending = new Map(frames.map((frame) => [frame[2]!, frame]))
     for (let attempt = 1; attempt <= this.#maxAttempts; attempt++) {
-      if (await this.#sendAndAwaitAck(frame)) return
+      await this.#settle()
+      await this.#sendBurstAndCollectAcks(pending)
+      if (pending.size === 0) return
     }
-    throw new Error(`${command}: packet ${frame[2]} not acknowledged after ${this.#maxAttempts} attempt(s)`)
+    throw new Error(`${command}: packet(s) ${[...pending.keys()].join(', ')} not acknowledged after ${this.#maxAttempts} attempt(s)`)
   }
 
-  #sendAndAwaitAck(frame: Bytes): Promise<boolean> {
-    return new Promise<boolean>((resolve, reject) => {
+  /** Sends every pending frame, then removes each one whose echo arrives before the link goes quiet. */
+  #sendBurstAndCollectAcks(pending: Map<number, Bytes>): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
       let unsubscribe = () => {}
-      const timer = setTimeout(() => {
+      let timer: ReturnType<typeof setTimeout> | undefined
+      const finish = (): void => {
+        if (timer !== undefined) clearTimeout(timer)
         unsubscribe()
-        resolve(false)
-      }, this.#ackTimeoutMs)
+        resolve()
+      }
+      const armIdle = (): void => {
+        if (timer !== undefined) clearTimeout(timer)
+        timer = setTimeout(finish, this.#ackTimeoutMs)
+      }
 
       unsubscribe = this.#transport.onInputReport((reportId, data) => {
         if (reportId !== this.#dialect.reportId) return
@@ -359,17 +468,52 @@ export class K916 {
         } catch {
           return
         }
-        if (!this.#dialect.isAck(frame, packet)) return
-        clearTimeout(timer)
-        unsubscribe()
-        resolve(true)
+        for (const [index, frame] of pending) {
+          if (this.#dialect.isAck(frame, packet)) {
+            pending.delete(index)
+            break
+          }
+        }
+        if (pending.size === 0) finish()
+        else armIdle()
       })
 
-      this.#transport.sendOutputReport(this.#dialect.reportId, frame).catch((error) => {
-        clearTimeout(timer)
+      const frames = [...pending.values()]
+      ;(async () => {
+        for (const frame of frames) await this.#transport.sendOutputReport(this.#dialect.reportId, frame)
+      })().then(armIdle, (error) => {
+        if (timer !== undefined) clearTimeout(timer)
         unsubscribe()
         reject(error)
       })
+    })
+  }
+
+  /**
+   * Resolves once no input report has arrived on our report for `settleMs`, so a fresh request
+   * does not inherit late packets from the previous exchange. Capped, so a chatty link cannot
+   * stall us forever.
+   */
+  #settle(): Promise<void> {
+    if (this.#settleMs === 0) return Promise.resolve()
+    return new Promise<void>((resolve) => {
+      let unsubscribe = () => {}
+      let quiet: ReturnType<typeof setTimeout> | undefined
+      const done = (): void => {
+        clearTimeout(cap)
+        if (quiet !== undefined) clearTimeout(quiet)
+        unsubscribe()
+        resolve()
+      }
+      const cap = setTimeout(done, SETTLE_CAP_MS)
+      const rearm = (): void => {
+        if (quiet !== undefined) clearTimeout(quiet)
+        quiet = setTimeout(done, this.#settleMs)
+      }
+      unsubscribe = this.#transport.onInputReport((reportId) => {
+        if (reportId === this.#dialect.reportId) rearm()
+      })
+      rearm()
     })
   }
 

@@ -24,10 +24,8 @@ export class MockTransport implements Transport {
   #consumed = new Set<number>()
   #pendingReplies: Bytes[] = []
   #inputHandlers = new Set<InputHandler>()
-  /** The simulated keyboard's wireless profile: seeded from the capture, updated by accepted writes. */
-  #profile: Uint8Array | undefined
-  /** The simulated keyboard's cable blocks by read opcode: profile, light colour, per-key colour. */
-  #wiredBlocks: Map<number, Uint8Array>
+  /** The simulated keyboard's blocks by read opcode (wired 0x8x, wireless 0x4x): seeded from the capture, updated by accepted writes. */
+  #blocks: Map<number, Uint8Array>
   #written = false
 
   /** Every write packet accepted by the simulator, in order — for asserting what was sent. */
@@ -36,19 +34,23 @@ export class MockTransport implements Transport {
   /** The profile as the simulated keyboard now holds it, or undefined if nothing was written. */
   get writtenProfile(): Uint8Array | undefined {
     if (!this.#written) return undefined
-    return this.#wiredBlocks.get(WIRED_PROFILE_READ_OPCODE) ?? this.#profile
+    return this.#blocks.get(WIRED_PROFILE_READ_OPCODE) ?? this.#blocks.get(WIRELESS_PROFILE_READ_OPCODE)
   }
 
-  /** Any cable block as the simulated keyboard now holds it, by its read opcode. */
+  /** Any block as the simulated keyboard now holds it, by its read opcode. */
+  block(readOpcode: number): Uint8Array | undefined {
+    return this.#blocks.get(readOpcode)
+  }
+
+  /** @deprecated use block() */
   wiredBlock(readOpcode: number): Uint8Array | undefined {
-    return this.#wiredBlocks.get(readOpcode)
+    return this.block(readOpcode)
   }
 
   constructor(ndjson: string, info = { vendorId: 0x258a, productId: 0x010c }) {
     this.#events = parseCapture(ndjson)
     this.info = info
-    this.#profile = seedProfile(this.#events)
-    this.#wiredBlocks = seedWiredBlocks(this.#events)
+    this.#blocks = new Map([...seedWiredBlocks(this.#events), ...seedWirelessBlocks(this.#events)])
   }
 
   async sendFeatureReport(reportId: number, data: Bytes): Promise<void> {
@@ -148,8 +150,14 @@ export class MockTransport implements Transport {
       throw new Error(`write packet ${index} has a bad checksum: ${toHex(data)}`)
     }
 
-    this.#profile ??= new Uint8Array(PROFILE_BYTES)
-    this.#profile.set(data.subarray(4, 4 + length), index * WIRELESS_CHUNK_BYTES)
+    const block = WIRELESS_BLOCKS_BY_WRITE_OPCODE.get(opcode)
+    if (!block) return false
+    const kept = this.#blocks.get(block.readOpcode) ?? new Uint8Array(block.readLength)
+    const start = index * WIRELESS_CHUNK_BYTES
+    if (start < block.readLength) {
+      kept.set(data.subarray(4, 4 + Math.min(length, block.readLength - start)), start)
+    }
+    this.#blocks.set(block.readOpcode, kept)
     this.#written = true
     this.writes.push(Uint8Array.from(data))
 
@@ -174,7 +182,7 @@ export class MockTransport implements Transport {
     const template = this.#events.find((e) => e.dir === dir && e.reportId === reportId && e.bytes.startsWith(header))
     if (!template) return false
 
-    this.#wiredBlocks.set(block.readOpcode, Uint8Array.from(data.subarray(WIRED_HEADER_BYTES, WIRED_HEADER_BYTES + block.readLength)))
+    this.#blocks.set(block.readOpcode, Uint8Array.from(data.subarray(WIRED_HEADER_BYTES, WIRED_HEADER_BYTES + block.readLength)))
     this.#written = true
     this.writes.push(Uint8Array.from(data))
     return true
@@ -182,9 +190,10 @@ export class MockTransport implements Transport {
 
   /** A block read the capture cannot (or must not) answer is served from the simulator. */
   #serveSimulatedProfile(dir: 'out:feature' | 'out:output', reportId: number, data: Bytes): boolean {
+    const block = this.#blocks.get(data[0]!)
+    if (!block) return false
+
     if (dir === 'out:feature') {
-      const block = this.#wiredBlocks.get(data[0]!)
-      if (!block) return false
       const reply = new Uint8Array(1 + WIRED_HEADER_BYTES + block.length)
       reply[0] = reportId
       reply.set(data.subarray(0, WIRED_HEADER_BYTES), 1)
@@ -192,17 +201,16 @@ export class MockTransport implements Transport {
       this.#pendingReplies.push(reply)
       return true
     }
-    if (!this.#profile || dir !== 'out:output' || data[0] !== WIRELESS_PROFILE_READ_OPCODE) return false
 
-    const profile = this.#profile
-    const total = Math.ceil(PROFILE_BYTES / WIRELESS_CHUNK_BYTES)
+    // Wireless replies are 14-byte packets, the last declaring the remainder — as captured.
+    const total = Math.ceil(block.length / WIRELESS_CHUNK_BYTES)
     const packets: Bytes[] = []
     for (let index = 0; index < total; index++) {
-      const remaining = PROFILE_BYTES - index * WIRELESS_CHUNK_BYTES
-      const length = Math.min(WIRELESS_CHUNK_BYTES, remaining)
+      const start = index * WIRELESS_CHUNK_BYTES
+      const length = Math.min(WIRELESS_CHUNK_BYTES, block.length - start)
       const packet = new Uint8Array(WIRELESS_FRAME_BYTES)
-      packet.set([WIRELESS_PROFILE_READ_OPCODE, total, index, length])
-      packet.set(profile.subarray(index * WIRELESS_CHUNK_BYTES, index * WIRELESS_CHUNK_BYTES + length), 4)
+      packet.set([data[0]!, total, index, length])
+      packet.set(block.subarray(start, start + length), 4)
       let sum = reportId
       for (let i = 0; i < WIRELESS_FRAME_BYTES - 1; i++) sum += packet[i]!
       packet[WIRELESS_FRAME_BYTES - 1] = sum & 0xff
@@ -249,19 +257,34 @@ function seedWiredBlocks(events: readonly CaptureEvent[]): Map<number, Uint8Arra
   return blocks
 }
 
-/** The wireless profile as first captured, merged from indexed packets. */
-function seedProfile(events: readonly CaptureEvent[]): Uint8Array | undefined {
-  const packets = new Map<number, Uint8Array>()
-  for (const event of events) {
-    if (event.dir !== 'in:input' || !event.bytes.startsWith('44 ')) continue
-    const bytes = bytesOf(event)
-    if (bytes.length !== WIRELESS_FRAME_BYTES) continue
-    if (!packets.has(bytes[2]!)) packets.set(bytes[2]!, bytes)
+/** The dongle blocks the simulator keeps: write opcode → the read that returns it and its size. */
+const WIRELESS_BLOCKS_BY_WRITE_OPCODE = new Map<number, { readOpcode: number; readLength: number }>([
+  [0x04, { readOpcode: WIRELESS_PROFILE_READ_OPCODE, readLength: PROFILE_BYTES }],
+  // The keyboard returns the light-colour block as 35 whole packets: 483 bytes of data, 490 on the wire.
+  [0x09, { readOpcode: 0x49, readLength: 490 }],
+  [0x02, { readOpcode: 0x42, readLength: 378 }],
+])
+
+/** Each dongle block as first captured, merged from its indexed packets, keyed by read opcode. */
+function seedWirelessBlocks(events: readonly CaptureEvent[]): Map<number, Uint8Array> {
+  const blocks = new Map<number, Uint8Array>()
+  for (const { readOpcode, readLength } of WIRELESS_BLOCKS_BY_WRITE_OPCODE.values()) {
+    const prefix = readOpcode.toString(16).padStart(2, '0') + ' '
+    const packets = new Map<number, Uint8Array>()
+    for (const event of events) {
+      if (event.dir !== 'in:input' || !event.bytes.startsWith(prefix)) continue
+      const bytes = bytesOf(event)
+      if (bytes.length !== WIRELESS_FRAME_BYTES) continue
+      if (!packets.has(bytes[2]!)) packets.set(bytes[2]!, bytes)
+    }
+    if (packets.size === 0) continue
+    const block = new Uint8Array(readLength)
+    for (const [index, bytes] of packets) {
+      const start = index * WIRELESS_CHUNK_BYTES
+      if (start >= readLength) continue
+      block.set(bytes.subarray(4, 4 + Math.min(bytes[3]! & 0x0f, readLength - start)), start)
+    }
+    blocks.set(readOpcode, block)
   }
-  if (packets.size === 0) return undefined
-  const profile = new Uint8Array(PROFILE_BYTES)
-  for (const [index, bytes] of packets) {
-    profile.set(bytes.subarray(4, 4 + (bytes[3]! & 0x0f)), index * WIRELESS_CHUNK_BYTES)
-  }
-  return profile
+  return blocks
 }
