@@ -1,0 +1,10 @@
+# NOTE: must sort BEFORE systemd 73-seat-late.rules for TAG+="uaccess" to take effect.
+# GravaStar keyboards and their 2.4G receiver. Grants the logged-in desktop user access to the
+# hidraw nodes so Chrome (WebHID) can open the vendor configuration interface.
+# TAG+="uaccess" makes systemd add an ACL for whoever is on the active local seat,
+# which is safer than opening the node to a whole group.
+#
+#   258a:010c  GravaStar Mercury K1 PRO, wired   (SinoWealth)
+#   3554:fa09  "CX 2.4G Wireless Receiver", the K1 PRO dongle
+KERNEL=="hidraw*", ATTRS{idVendor}=="258a", MODE="0660", TAG+="uaccess"
+KERNEL=="hidraw*", ATTRS{idVendor}=="3554", MODE="0660", TAG+="uaccess"

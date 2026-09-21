@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="en" data-theme="dark" data-field="ambient">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>K1 PRO status screen — glass, three themes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&display=swap" rel="stylesheet">
+<style>
+/* ---------- tokens: three first-class themes ---------- */
+:root{
+  --radius:12px; --frame-w:480px;
+  --ok:#8fd694; --bad:#ff8a7a;
+}
+:root[data-theme="white"]{
+  --page-bg:#dfe2e8; --page-text:#17191d; --page-text-2:#4b5160;
+  --bg:#eceef2; --text:#17191d; --text-2:#4b5160; --text-3:#5c6270;
+  --accent:#8f4a00; --accent-ink:#fff7ec; --accent-soft:rgba(143,74,0,.14);
+  --ok:#1d6a2f; --bad:#a83220;
+  --hair:rgba(23,25,29,.14); --edge:rgba(255,255,255,.85); --edge-lo:rgba(23,25,29,.10); --edge-hi:rgba(255,255,255,.95);
+  --shadow:rgba(23,25,29,.10);
+  --glass-frost:rgba(255,255,255,.60); --glass-sheet:rgba(255,255,255,.72); --glass-rail:rgba(255,255,255,.50); --glass-noblur:rgba(255,255,255,.74);
+  --cap:.34; --static-a:#f6f7fa; --static-b:#d9dee8; --grain:.05;
+}
+:root[data-theme="dark"]{
+  --page-bg:#101114; --page-text:#e6e8ec; --page-text-2:#a9aeb8;
+  --bg:#1a1c20; --text:#eceef2; --text-2:#bbc0ca; --text-3:#a0a6b2;
+  --accent:#f5b043; --accent-ink:#1a1206; --accent-soft:rgba(245,176,67,.16);
+  --hair:rgba(255,255,255,.10); --edge:rgba(255,255,255,.14); --edge-lo:rgba(255,255,255,.06); --edge-hi:rgba(255,255,255,.18);
+  --shadow:rgba(0,0,0,.35);
+  --glass-frost:rgba(255,255,255,.06); --glass-sheet:rgba(26,28,32,.72); --glass-rail:rgba(255,255,255,.06); --glass-noblur:rgba(30,32,36,.78);
+  --cap:.14; --static-a:#24262c; --static-b:#141518; --grain:.06;
+}
+:root[data-theme="black"]{
+  --page-bg:#141414; --page-text:#ececec; --page-text-2:#a9acb3;
+  --bg:#000000; --text:#f2f2f2; --text-2:#b9bcc4; --text-3:#a3a7b0;
+  --accent:#f5b043; --accent-ink:#1a1206; --accent-soft:rgba(245,176,67,.18);
+  --hair:rgba(255,255,255,.12); --edge:rgba(255,255,255,.18); --edge-lo:rgba(255,255,255,.07); --edge-hi:rgba(255,255,255,.26);
+  --shadow:rgba(0,0,0,.6);
+  --glass-frost:rgba(255,255,255,.05); --glass-sheet:rgba(0,0,0,.55); --glass-rail:rgba(255,255,255,.05); --glass-noblur:rgba(14,14,16,.72);
+  --cap:.26; --static-a:#0b0b0d; --static-b:#000000; --grain:.08;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--page-bg);color:var(--page-text);font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums;font-size:15px;line-height:1.45}
+button{font:inherit;color:inherit}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
+p{margin:0 0 .6em}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
+
+/* ---------- page chrome ---------- */
+.page-head{padding:28px 24px 12px;max-width:1380px;margin:0 auto}
+.page-head h1{font-size:26px;font-stretch:88%;font-weight:700}
+.page-head .sub{color:var(--page-text-2);max-width:74ch;margin-top:6px}
+.controls{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--hair)}
+.ctl-group{display:flex;align-items:center;gap:8px}
+.ctl-group .k{font-stretch:75%;text-transform:uppercase;letter-spacing:.09em;font-size:12px;color:var(--page-text-2);margin-right:2px}
+.seg{display:inline-flex;border:1px solid var(--hair);border-radius:8px;overflow:hidden;background:var(--bg)}
+.seg button{background:none;border:0;padding:7px 13px;cursor:pointer;color:var(--page-text-2);border-right:1px solid var(--hair)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.seg .tag{display:inline-block;font-stretch:75%;letter-spacing:.06em;font-size:11px;margin-right:6px;opacity:.85}
+
+main{max-width:1380px;margin:0 auto;padding:14px 24px 40px}
+.opt{display:none;grid-template-columns:auto minmax(280px,1fr);gap:28px;align-items:start}
+.opt[data-active]{display:grid}
+@media (max-width:1000px){.opt{grid-template-columns:1fr}}
+.stage{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ruler{font-stretch:75%;letter-spacing:.08em;text-transform:uppercase;font-size:12px;color:var(--page-text-2)}
+.frame{width:var(--frame-w);height:640px;position:relative;overflow:hidden;background:var(--bg);color:var(--text);border:1px solid var(--hair);border-radius:var(--radius);container-type:inline-size;container-name:frame;font-size:13.5px;transition:width .25s ease;isolation:isolate}
+.notes{padding-top:4px;max-width:66ch}
+.notes h2{font-size:20px;margin-bottom:2px;font-stretch:90%}
+.notes .idea{color:var(--page-text-2);font-size:15px;margin-bottom:14px}
+.notes h3{font-stretch:75%;text-transform:uppercase;letter-spacing:.1em;font-size:12px;color:var(--page-text-2);margin:16px 0 6px}
+.notes ul{margin:0;padding-left:18px}
+.notes li{margin:3px 0}
+.badge{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:6px;border:1px solid var(--hair);margin-right:6px;vertical-align:1px}
+.badge.blur{color:var(--accent)}
+
+.tokens{max-width:1380px;margin:0 auto;padding:0 24px 60px}
+.tokens h2{font-size:18px;margin-bottom:8px}
+.tokens .sub{color:var(--page-text-2);max-width:78ch}
+.tokens table{border-collapse:collapse;font-size:14px}
+.tokens th,.tokens td{text-align:left;padding:5px 14px 5px 0;border-bottom:1px solid var(--hair);vertical-align:top}
+.tokens th{font-stretch:75%;text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--page-text-2);font-weight:500}
+.tokens .sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid var(--hair)}
+.tokens .fail{color:var(--bad);font-weight:600}
+.tokens .pass{color:var(--ok)}
+
+/* ---------- ambient / static field ---------- */
+.field{position:absolute;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+.field .amb{position:absolute;inset:0;opacity:calc(var(--cap) * var(--lvl));background:transparent}
+.field.static .amb{display:none}
+.field.static{background:linear-gradient(135deg,var(--static-a),var(--static-b))}
+.field::after{content:"";position:absolute;inset:0;opacity:var(--grain);mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");background-size:160px}
+.field:not(.static)::after{display:none}
+/* single-colour effects */
+.fx-solid .amb{background:radial-gradient(60% 50% at 50% 12%,var(--c),transparent 70%)}
+.fx-reactive .amb{background:radial-gradient(45% 35% at 30% 75%,var(--c),transparent 70%),radial-gradient(35% 30% at 75% 25%,var(--c),transparent 70%)}
+.fx-wave .amb{background:linear-gradient(100deg,transparent 20%,var(--c) 45%,transparent 70%);background-size:220% 100%;animation:slide var(--dur) linear infinite}
+.fx-sine .amb{background:linear-gradient(100deg,transparent,var(--c) 25%,transparent 50%,var(--c) 75%,transparent);background-size:220% 100%;animation:slide var(--dur) ease-in-out infinite}
+.fx-stars .amb{background:radial-gradient(circle at 18% 30%,var(--c) 0 2%,transparent 9%),radial-gradient(circle at 63% 70%,var(--c) 0 2%,transparent 9%),radial-gradient(circle at 82% 22%,var(--c) 0 1.5%,transparent 8%),radial-gradient(circle at 40% 55%,var(--c) 0 1.5%,transparent 7%),radial-gradient(circle at 12% 85%,var(--c) 0 1.5%,transparent 8%);animation:twinkle var(--dur) ease-in-out infinite}
+/* mixed-colour effects: ignore the colour setting */
+.fx-rainbow .amb{background:linear-gradient(100deg,#ff4d4d,#ffe14d,#4de07a,#3ee0e8,#4d7bff,#b56bff,#ff4d4d);background-size:300% 100%;animation:slide var(--dur) linear infinite}
+.fx-windmill .amb{inset:-60%;background:conic-gradient(from 0deg,#ff4d4d,#ffe14d,#4de07a,#3ee0e8,#4d7bff,#b56bff,#ff4d4d);animation:spin var(--dur) linear infinite;filter:blur(40px)}
+.fx-waterfall .amb{background:linear-gradient(180deg,#3ee0e8,#4d7bff,#b56bff,#3ee0e8);background-size:100% 300%;animation:fall var(--dur) linear infinite}
+.fx-bloom .amb{background:radial-gradient(45% 45% at 50% 50%,#ff9a2e,#b56bff 50%,transparent 75%);animation:bloom var(--dur) ease-in-out infinite}
+.fx-custom .amb{background:radial-gradient(50% 45% at 25% 30%,#3ee0e8,transparent 70%),radial-gradient(50% 45% at 78% 70%,#b56bff,transparent 70%)}
+.fx-off .amb{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slide{to{background-position:-300% 0}}
+@keyframes fall{to{background-position:0 -300%}}
+@keyframes twinkle{0%,100%{opacity:calc(var(--cap) * var(--lvl) * .5)}50%{opacity:calc(var(--cap) * var(--lvl))}}
+@keyframes bloom{0%,100%{transform:scale(.7)}50%{transform:scale(1.4)}}
+@keyframes chg{0%,100%{opacity:.5}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.amb,.batt .fill{animation:none!important}}
+
+/* ---------- glass surfaces ---------- */
+.glass{border:1px solid var(--edge-lo);border-top-color:var(--edge);box-shadow:inset 0 1px 0 var(--edge-hi),0 10px 30px -12px var(--shadow),0 0 60px -30px var(--c-glow, transparent)}
+.g-frost .glass{background:var(--glass-frost);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%)}
+.g-sheet .glass{background:var(--glass-sheet);backdrop-filter:blur(24px) saturate(130%);-webkit-backdrop-filter:blur(24px) saturate(130%)}
+.g-rail .glass{background:var(--glass-rail);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%)}
+.g-noblur .glass{background:var(--glass-noblur)}
+.g-noblur .glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(160deg,var(--edge-hi) 0%,transparent 35%);opacity:.5}
+
+/* ---------- shared in-app primitives ---------- */
+.app{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column}
+.lbl{font-stretch:75%;text-transform:uppercase;letter-spacing:.09em;font-size:11px;color:var(--text-2);font-weight:500}
+.act{background:none;border:0;padding:0;margin:0;text-align:left;cursor:pointer;border-radius:6px;font:inherit;color:inherit}
+.act:hover{background:color-mix(in srgb,var(--text) 7%,transparent)}
+.act:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.val{font-weight:600;color:var(--text)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.95em}
+.dim{color:var(--text-2);font-weight:400}
+.steps{display:inline-flex;align-items:center;gap:3px;vertical-align:middle}
+.steps i{display:block;width:10px;height:14px;border-radius:2px;background:transparent;border:1px solid var(--text-2)}
+.steps i.on{background:var(--accent);border-color:var(--accent)}
+.steps b{font-weight:600;margin-left:6px;font-size:.95em}
+.batt{display:inline-block;vertical-align:middle;overflow:visible}
+.batt .case{fill:none;stroke:var(--text-2);stroke-width:1.5}
+.batt .nub{fill:var(--text-2)}
+.batt .fill{fill:var(--ok)}
+.batt.low .fill{fill:var(--bad)}
+.batt.charging .fill{animation:chg 2.2s ease-in-out infinite}
+.batt .bolt{fill:var(--accent-ink);stroke:var(--accent);stroke-width:1;stroke-linejoin:round}
+.batt.unknown .case{stroke-dasharray:3 2.5}
+.batt.unknown .plug{fill:none;stroke:var(--text-2);stroke-width:1.5;stroke-linecap:round}
+.swatch{display:inline-block;width:18px;height:18px;border-radius:5px;border:1px solid var(--hair);vertical-align:middle;flex:none}
+.swatch.mix{background:conic-gradient(#ff4d4d,#ffe14d,#4de07a,#3ee0e8,#4d7bff,#b56bff,#ff4d4d)}
+.swatch.perkey{background:repeating-linear-gradient(90deg,#3ee0e8 0 4px,#b56bff 4px 8px,#ffe14d 8px 12px)}
+.swatch.none{background:transparent;border-style:dashed}
+.picker{position:absolute;inset:0;background:color-mix(in srgb,var(--bg) 55%,transparent);z-index:5;display:flex;align-items:flex-end;justify-content:center;padding:12px}
+.picker .sheet{background:var(--bg);border:1px solid var(--edge-lo);border-top-color:var(--edge);border-radius:12px;width:min(100%,360px);max-height:100%;overflow:auto;box-shadow:0 18px 40px var(--shadow)}
+.picker header{padding:10px 14px;border-bottom:1px solid var(--hair);display:flex;justify-content:space-between;align-items:center}
+.picker header span{color:var(--text-2);font-size:12px}
+.picker ul{list-style:none;margin:0;padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.picker li button{display:flex;justify-content:space-between;width:100%;text-align:left;padding:8px 10px;border-radius:7px;background:none;border:0;cursor:pointer}
+.picker li button small{color:var(--text-2);font-size:11px}
+.picker li button:hover{background:var(--accent-soft)}
+.picker li button[aria-current="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.picker li button[aria-current="true"] small{color:var(--accent-ink)}
+.nav-ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- structure A: readout stack ---------- */
+.A-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:16px 18px 12px;border-bottom:1px solid var(--hair)}
+.A-top strong{display:block;font-size:17px;font-weight:600}
+.A-top .fw{color:var(--text-2);font-size:12.5px}
+.A-link{display:inline-flex;border:1px solid var(--hair);border-radius:7px;overflow:hidden;font-size:12px;font-weight:600;flex:none}
+.A-link span{padding:6px 9px;color:var(--text-2);border-right:1px solid var(--hair)}
+.A-link span:last-child{border-right:0}
+.A-link span.on{background:var(--accent);color:var(--accent-ink)}
+.A-body{flex:1;overflow:auto;display:grid;grid-template-columns:1fr;align-content:start;min-height:0}
+.A-power{display:flex;align-items:center;gap:16px;padding:18px;border-bottom:1px solid var(--hair);width:100%}
+.A-power .big{font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.A-power .sub{color:var(--text-2);margin-top:4px}
+.A-power .unk{font-size:16px;font-weight:600;line-height:1.25}
+.A-power .unk small{display:block;font-size:13px;color:var(--text-2);font-weight:400;margin-top:3px}
+.A-group{padding:10px 18px 12px;border-bottom:1px solid var(--hair)}
+.A-group h2{margin-bottom:4px}
+.A-row{display:grid;grid-template-columns:92px 1fr;align-items:center;min-height:36px;gap:10px;width:100%;padding:2px 6px;margin:0 -6px}
+.A-row .k{color:var(--text-2)}
+.A-row .v{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
+.A-nav{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--hair)}
+.A-nav button{background:none;border:0;padding:9px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:var(--text-2);cursor:pointer;font-stretch:88%}
+.A-nav button[aria-current="page"]{color:var(--accent)}
+@container frame (min-width:700px){
+  .A-body{grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;align-content:stretch}
+  .A-power{grid-row:1/3;border-right:1px solid var(--hair);align-items:flex-start;flex-direction:column;justify-content:center;gap:14px}
+  .A-power .big{font-size:56px}
+  .A-nav{grid-template-columns:repeat(4,max-content);justify-content:start;padding-left:10px}
+  .A-nav button{flex-direction:row;padding:10px 14px;font-size:13px}
+}
+/* sheet design: one pane, hairlines only */
+.g-sheet .app.A{inset:10px;border-radius:14px;overflow:hidden}
+/* no-blur design: stacked panes */
+.g-noblur .app.A{padding:10px;gap:10px}
+.g-noblur .A-top{border:0;border-radius:12px;position:relative}
+.g-noblur .A-body{gap:10px;overflow:visible}
+.g-noblur .A-power,.g-noblur .A-group{border:0;border-radius:12px;position:relative}
+.g-noblur .A-nav{border:0;border-radius:12px;position:relative}
+@container frame (min-width:700px){
+  .g-noblur .A-power{border-right:0}
+}
+
+/* ---------- structure D: rail + panel ---------- */
+.D{flex-direction:row}
+.D-rail{width:60px;flex:none;display:flex;flex-direction:column;padding:10px 0;position:relative;overflow:hidden}
+.D-rail>*{position:relative;z-index:1}
+.D-glance{display:flex;flex-direction:column;gap:6px;padding:0 8px 10px;border-bottom:1px solid var(--hair)}
+.D-glance .act{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;font-size:11px;font-weight:600;text-align:center}
+.D-glance .act .t{display:none}
+.D-glance .act svg.ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.D-glance .n{font-size:11px;font-weight:600;color:var(--text-2)}
+.D-nav{display:flex;flex-direction:column;gap:2px;padding:10px 8px}
+.D-nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:8px;color:var(--text-2);font-size:10.5px;font-stretch:80%;cursor:pointer}
+.D-nav button[aria-current="page"]{background:var(--accent-soft);color:var(--text)}
+.D-panel{flex:1;overflow:auto;padding:16px 18px 18px;min-width:0}
+.D-panel header{margin-bottom:12px}
+.D-panel header strong{font-size:17px;font-weight:600;display:block}
+.D-panel header .fw{color:var(--text-2);font-size:12.5px}
+.D-sec{border-top:1px solid var(--hair);padding:12px 0 10px}
+.D-sec h2{margin-bottom:8px}
+.D-stmt{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.2;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.D-stmt .sub{display:block;font-size:13px;color:var(--text-2);font-weight:400;margin-top:3px;letter-spacing:0}
+.D-note{margin-top:8px;padding:8px 10px;border-left:3px solid var(--accent);border-radius:0 8px 8px 0;font-size:13px;background:var(--accent-soft)}
+.D-note.muted{border-left-color:var(--text-2);background:transparent;color:var(--text-2);padding-left:10px}
+.D-rows{display:grid;grid-template-columns:1fr;gap:2px 20px}
+.D-row{display:grid;grid-template-columns:88px 1fr;align-items:center;min-height:34px;gap:8px;padding:1px 6px;margin:0 -6px;width:100%}
+.D-row .k{color:var(--text-2)}
+.D-row .v{display:flex;align-items:center;gap:8px;font-weight:600;flex-wrap:wrap}
+@container frame (min-width:700px){
+  .D-rail{width:200px}
+  .D-glance .act{flex-direction:row;justify-content:flex-start;gap:10px;padding:7px 8px;font-size:12.5px;text-align:left}
+  .D-glance .act .t{display:block}
+  .D-glance .n{display:none}
+  .D-nav button{flex-direction:row;justify-content:flex-start;gap:10px;padding:8px 10px;font-size:13px;font-stretch:100%}
+  .D-rows{grid-template-columns:1fr 1fr}
+  .D-panel{padding:20px 26px}
+}
+/* frosted cards: rail and sections are cards on the field */
+.g-frost .app.D{padding:10px;gap:10px}
+.g-frost .D-rail{border-radius:12px}
+.g-frost .D-panel{padding:6px 0 0}
+.g-frost .D-panel header{padding:0 6px 6px}
+.g-frost .D-sec{border:0;border-radius:12px;padding:12px 14px;margin-bottom:10px;position:relative}
+.g-frost .D-rows{grid-template-columns:1fr}
+@container frame (min-width:700px){
+  .g-frost .D-panel{padding:6px 0 0}
+  .g-frost .D-rows{grid-template-columns:1fr 1fr}
+}
+/* rail of light: solid panel, glass rail lit by the effect */
+.g-rail .D-rail{border-right:1px solid var(--edge-lo)}
+.g-rail .D-rail .field{z-index:0}
+.g-rail .D-rail .rail-glass{position:absolute;inset:0;z-index:0;border:0;border-radius:0;box-shadow:inset -1px 0 0 var(--edge-lo),inset 1px 0 0 var(--edge-hi)}
+.g-rail .D-rail .rail-glass::after{content:"";position:absolute;top:0;bottom:0;right:0;width:2px;background:var(--strip,transparent)}
+.g-rail .D-panel{background:var(--bg)}
+.g-rail .D-panel .lbl{color:var(--text-3)}
+</style>
+</head>
+<body>
+
+<header class="page-head">
+  <h1>Mercury K1 PRO — glass, in white, dark and black</h1>
+  <p class="sub">Round 2: same read-only status screen, four glass treatments, each in three themes. Structures are A (readout stack) and D (rail + panel) from round 1 — the information architecture is unchanged. A small utility window has nothing behind it to blur, so each frame draws its own <em>field</em> behind the glass: <strong>Ambient</strong> is a slow, soft rendition of the keyboard's current effect and colour; <strong>Static</strong> is a designed gradient with grain. Click values inside a frame to change the preview state.</p>
+  <div class="controls">
+    <div class="ctl-group"><span class="k">Design</span>
+      <div class="seg" id="optTabs">
+        <button data-opt="frost" aria-pressed="true"><span class="tag">1</span>Frosted cards</button>
+        <button data-opt="sheet" aria-pressed="false"><span class="tag">2</span>Single sheet</button>
+        <button data-opt="rail" aria-pressed="false"><span class="tag">3</span>Rail of light</button>
+        <button data-opt="noblur" aria-pressed="false"><span class="tag">4</span>No-blur glass</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Theme</span>
+      <div class="seg" id="themeSeg">
+        <button data-theme="white" aria-pressed="false">White</button>
+        <button data-theme="dark" aria-pressed="true">Dark</button>
+        <button data-theme="black" aria-pressed="false">Black</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Field</span>
+      <div class="seg" id="fieldSeg">
+        <button data-field="ambient" aria-pressed="true">Ambient (effect-driven)</button>
+        <button data-field="static" aria-pressed="false">Static gradient + grain</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Window</span>
+      <div class="seg" id="widthSeg">
+        <button data-w="480" aria-pressed="true">480 × 640</button>
+        <button data-w="900" aria-pressed="false">900 × 640</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="opt" data-opt="frost" data-active>
+  <div class="stage"><div class="frame g-frost" id="frame-frost"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>1 — Frosted cards <span class="badge">structure D</span><span class="badge blur">backdrop-filter</span></h2>
+    <p class="idea">Discrete translucent panels — the rail and each section — float on the field with a 10 px gutter, so the effect shows between and through them. This is the fullest expression of "glass": the rail, Connection, Lighting and Sleep are four blurred cards.</p>
+    <h3>Glass, and what it is for</h3>
+    <ul>
+      <li>Each card blurs the field at 16 px and lifts saturation 40 % so the effect colour reads as a tint through the panel rather than a smear.</li>
+      <li>Edge light: a 1 px border that is brighter on the top edge plus a 1 px inner highlight. In Black this is the only thing that makes a card a card — the fill is 5 % white, so the field and the true-black gutter stay black.</li>
+      <li>A faint outer glow in the effect colour (60 px, −30 px spread) ties cards to the field; it is off when lighting is Off.</li>
+    </ul>
+    <h3>Cost</h3>
+    <ul><li>Five blurred elements over an animated field is the most expensive variant here. If it stutters, design 4 is the same layering without the filter.</li></ul>
+    <h3>Contrast</h3>
+    <ul><li>Dark and Black fills are thin (6 % / 5 % white), so the ambient cap is set low (14 % / 26 %) to keep secondary text at ≥ 4.5 : 1 even under a white Always On at brightness 4. Black-theme worst case is 4.5 : 1 — passes with no headroom; the table below shows it live.</li></ul>
+    <h3>Default state here</h3>
+    <ul><li>2.4G, 100 % full, Windmill (a mixed-colour effect — the colour row greys with the reason), brightness 1, speed 0, sleep 1 min.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="sheet">
+  <div class="stage"><div class="frame g-sheet" id="frame-sheet"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>2 — Single sheet <span class="badge">structure A</span><span class="badge blur">backdrop-filter × 1</span></h2>
+    <p class="idea">The whole window is one pane of glass set 10 px inside the frame. There are no boxes: hierarchy comes from type size, the 92 px label column and hairlines. The field is visible only as a rim around the sheet and as a soft tint through it.</p>
+    <h3>Glass, and what it is for</h3>
+    <ul>
+      <li>One backdrop-filter (24 px blur) on one element — the cheapest way to get real blur. The sheet fill is heavier (72 % white / 72 % graphite / 55 % black) so the readout stays calm under any effect.</li>
+      <li>The rim is where the effect lives: with Windmill the edge of the window slowly cycles hue while the readout itself barely moves. Purposeful: peripheral confirmation that lighting is on, without competing with the numbers.</li>
+      <li>In Black the sheet is 55 % black over black — invisible by fill — so the top-edge light and inner highlight carry the pane; the rim glow makes the rest of the silhouette.</li>
+    </ul>
+    <h3>Pairs best with</h3>
+    <ul><li>The Static field: a designed gradient with grain gives the blur something to soften and the sheet then reads as frosted at all times, not only when an effect is animated. Toggle Field above to compare.</li></ul>
+    <h3>Default state here</h3>
+    <ul><li>Wired (battery not reported, sleep row muted), Always On in Cyan (palette 4), brightness 4, speed 0 — a static single colour, so the rim tint is steady.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="rail">
+  <div class="stage"><div class="frame g-rail" id="frame-rail"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>3 — Rail of light <span class="badge">structure D</span><span class="badge blur">backdrop-filter, rail only</span></h2>
+    <p class="idea">Glass only where it means something. The content panel is solid and fully opaque; the rail is the status element and it is lit by the effect: the ambient field is drawn <em>inside the rail</em> and blurred there. Because the rail also carries the glance glyphs (link, battery, effect swatch), "what is the keyboard doing right now" is one strip of light on the left, in every area of the app.</p>
+    <h3>Glass, and what it is for</h3>
+    <ul>
+      <li>Blur is confined to a 60 px (or 200 px) column; the animated region is a fraction of the window, so this is the cheapest animated variant.</li>
+      <li>The content panel has no translucency at all, so its contrast is the plain token contrast — labels here use the most muted tier (<code>--text-3</code>), which is not permitted on glass in the other designs.</li>
+      <li>A 2 px strip on the rail's inner edge carries the effect colour at full strength (a gradient for mixed-colour effects) — the one place the colour is shown undiluted, because nothing is written over it. In Dark and Black the ambient cap keeps the field itself subtle, so the strip is what makes the rail read as lit; Off → strip and field both go dark, which is the honest reading.</li>
+    </ul>
+    <h3>Default state here</h3>
+    <ul><li>2.4G at 23 % charging, Wave in Blue (palette 5), brightness 3, speed 2 — a single-colour animated effect so the rail visibly moves.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="noblur">
+  <div class="stage"><div class="frame g-noblur" id="frame-noblur"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>4 — No-blur glass <span class="badge">structure A</span><span class="badge">no backdrop-filter</span></h2>
+    <p class="idea">The fallback: the glass feel from layering alone. Four stacked panes (header, power, lighting/power groups, nav) with translucent fills, a top-edge light, an inner highlight and a diagonal sheen — and no filter anywhere. The trick is that the ambient field is already soft (large radial and conic gradients, blurred at draw time in CSS rather than at composite time), so translucency without blur still looks like frosted glass.</p>
+    <h3>Glass, and what it is for</h3>
+    <ul>
+      <li>Fills are heavier than design 1 (74 % white / 78 % graphite / 72 % near-black) because there is no blur to homogenise what is behind; that is also why its contrast numbers are the best of the four.</li>
+      <li>The sheen (<code>::before</code> gradient, 50 % opacity) is a static highlight that reads as a reflective surface. It does not animate.</li>
+      <li>Only the field animates, and it is a single layer. With reduced motion the field is a still gradient and nothing else changes.</li>
+    </ul>
+    <h3>When to choose it</h3>
+    <ul><li>If designs 1–3 run hot on the laptop, or if Chrome's backdrop-filter stutters with the animated field. The fills and edges are shared tokens, so switching a shipped design to this one is a CSS-only change.</li></ul>
+    <h3>Default state here</h3>
+    <ul><li>2.4G at 61 %, Custom (per-key colours), brightness 2, speed 1, sleep 5 min.</li></ul>
+  </aside>
+</section>
+
+</main>
+
+<section class="tokens">
+  <h2>Composited contrast, measured</h2>
+  <p class="sub">Computed at load and on every change, for the selected design, theme and field. Each row alpha-composites the panel fill over the field pixel, then measures the text against that result. <strong>Now</strong> is the current preview state (its colour at its brightness stage). <strong>Worst</strong> is the harshest pixel the field can produce: every palette colour and every mixed-effect hue at the ambient cap at brightness 4, or both ends of the static gradient — whichever is worse. Body and secondary text must clear 4.5 : 1 in the Worst column.</p>
+  <table id="tokenTable"></table>
+</section>
+
+<script>
+(() => {
+const EFFECTS = ['Off','Custom','Always On','Dream Rainbow','One Touch','Key Ripple','Stars','Wave','Shadow','Sine Wave','Windmill','Waterfall','Blooming'];
+const MIXED = new Set(['Dream Rainbow','Windmill','Waterfall','Blooming']);
+const FX_CLASS = {'Off':'fx-off','Custom':'fx-custom','Always On':'fx-solid','Dream Rainbow':'fx-rainbow','One Touch':'fx-reactive','Key Ripple':'fx-reactive','Stars':'fx-stars','Wave':'fx-wave','Shadow':'fx-reactive','Sine Wave':'fx-sine','Windmill':'fx-windmill','Waterfall':'fx-waterfall','Blooming':'fx-bloom'};
+const ANIMATED = new Set(['Dream Rainbow','Stars','Wave','Sine Wave','Windmill','Waterfall','Blooming']);
+const PALETTE = [['Red','#ff4d4d'],['Orange','#ff9a2e'],['Yellow','#ffe14d'],['Green','#4de07a'],['Cyan','#3ee0e8'],['Blue','#4d7bff'],['Purple','#b56bff'],['White','#ffffff']];
+const MIX_STOPS = ['#ff4d4d','#ffe14d','#4de07a','#3ee0e8','#4d7bff','#b56bff','#ff9a2e'];
+const BATT = [{pct:100,charging:false,full:true},{pct:23,charging:true,full:false},{pct:61,charging:false,full:false},{pct:8,charging:false,full:false}];
+const SLEEPS = [0.5,1,5,20];
+const LVL = [0,.4,.6,.8,1];
+const DUR = [60,45,30,20,12];
+
+const base = () => ({device:'GravaStar Mercury K1 PRO', fw:'0x1707', connection:'2.4g', battIdx:0, effect:'Windmill', brightness:1, speed:0, colorIdx:7, sleep:1});
+const states = {
+  frost: base(),
+  sheet: Object.assign(base(), {connection:'wired', effect:'Always On', colorIdx:4, brightness:4}),
+  rail: Object.assign(base(), {battIdx:1, effect:'Wave', colorIdx:5, brightness:3, speed:2}),
+  noblur: Object.assign(base(), {battIdx:2, effect:'Custom', brightness:2, speed:1, sleep:5}),
+};
+const STRUCT = {frost:'D', sheet:'A', rail:'D', noblur:'A'};
+
+const colourOf = s => {
+  if (MIXED.has(s.effect)) return {kind:'mixed', label:'Mixed colours', why:'set by the effect'};
+  if (s.effect === 'Custom') return {kind:'perkey', label:'Per-key RGB', why:'set per key in Lighting'};
+  const [name, hex] = PALETTE[s.colorIdx];
+  return {kind:'single', label:name, hex, idx:s.colorIdx, why: s.effect === 'Off' ? 'lighting is off' : ''};
+};
+const view = s => {
+  const wired = s.connection === 'wired';
+  const b = wired ? null : BATT[s.battIdx];
+  const col = colourOf(s);
+  return {...s, wired, batt:b, col,
+    connLabel: wired ? 'Wired' : '2.4G',
+    battLine: b ? (b.full ? 'Full · not charging' : b.charging ? 'Charging' : b.pct <= 15 ? 'Low · not charging' : 'Not charging') : null,
+    sleepLabel: s.sleep < 1 ? '30 s' : `${s.sleep} min`,
+    animated: ANIMATED.has(s.effect),
+    fieldColour: col.kind === 'single' ? col.hex : null,
+  };
+};
+
+const I = {
+  device:'<svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 14h10"/></svg>',
+  light:'<svg class="nav-ic" viewBox="0 0 24 24"><path d="M12 3v2M4.9 6.9l1.4 1.4M3 13h2M19 13h2M17.7 8.3l1.4-1.4"/><path d="M8 17a5 5 0 1 1 8 0v2H8z"/><path d="M10 21h4"/></svg>',
+  keys:'<svg class="nav-ic" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h2M11 10h2M15 10h2M7 14h10"/></svg>',
+  macro:'<svg class="nav-ic" viewBox="0 0 24 24"><path d="M5 7h14M5 12h9M5 17h11"/><circle cx="19" cy="17" r="2"/></svg>',
+  plug:'<path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0z"/><path d="M12 16v5"/>',
+  radio:'<circle cx="12" cy="13" r="1.5"/><path d="M8.5 9.5a5 5 0 0 0 0 7M15.5 9.5a5 5 0 0 1 0 7M5.6 6.6a9 9 0 0 0 0 12.8M18.4 6.6a9 9 0 0 1 0 12.8"/>',
+};
+
+const battSvg = (b, w = 34) => {
+  const h = Math.round(w * 16 / 34);
+  if (!b) return `<svg class="batt unknown" viewBox="0 0 34 16" width="${w}" height="${h}" role="img" aria-label="Battery not reported"><rect class="case" x=".75" y=".75" width="28.5" height="14.5" rx="3"/><rect class="nub" x="31" y="5" width="3" height="6" rx="1"/><path class="plug" d="M12 4v3M18 4v3M10.5 7h9v2a4.5 4.5 0 0 1-9 0z"/></svg>`;
+  const fill = Math.max(1, Math.round(25 * b.pct / 100));
+  const cls = ['batt', b.charging ? 'charging' : '', b.pct <= 15 ? 'low' : ''].join(' ');
+  return `<svg class="${cls}" viewBox="0 0 34 16" width="${w}" height="${h}" role="img" aria-label="Battery ${b.pct} percent${b.charging ? ', charging' : ''}"><rect class="case" x=".75" y=".75" width="28.5" height="14.5" rx="3"/><rect class="nub" x="31" y="5" width="3" height="6" rx="1"/><rect class="fill" x="2.75" y="2.75" width="${fill}" height="10.5" rx="1.5"/>${b.charging ? '<path class="bolt" d="M16.5 2.5 11.5 9h3.5l-1 4.5 5-6.5h-3.5z"/>' : ''}</svg>`;
+};
+const steps = (val, min, max) => {
+  let cells = '';
+  for (let i = min; i <= max; i++) cells += `<i class="${i <= val ? 'on' : ''}"></i>`;
+  return `<span class="steps" role="img" aria-label="stage ${val} of ${min}–${max}">${cells}<b>${val}</b></span>`;
+};
+const swatch = c => c.kind === 'mixed' ? '<span class="swatch mix"></span>' : c.kind === 'perkey' ? '<span class="swatch perkey"></span>' : `<span class="swatch" style="background:${c.hex}"></span>`;
+const colourText = c => c.kind === 'single'
+  ? `<span class="val">${c.label}</span><span class="dim">palette ${c.idx} · <span class="mono">${c.hex}</span>${c.why ? ' · ' + c.why : ''}</span>`
+  : `<span class="dim">${c.label} — ${c.why}</span>`;
+const btn = (act, inner, cls = '', label = '') => `<button type="button" class="act ${cls}" data-act="${act}" aria-label="${label || 'Preview: change ' + act}">${inner}</button>`;
+const fieldHtml = (v, mode) => `<div class="field ${mode === 'static' ? 'static' : ''} ${FX_CLASS[v.effect]}" style="--c:${v.fieldColour || 'transparent'};--lvl:${LVL[v.brightness]};--dur:${DUR[v.speed]}s"><div class="amb"></div></div>`;
+
+/* structure A */
+const renderA = (v, g) => `
+<div class="app A ${g === 'sheet' ? 'glass' : ''}">
+  <header class="A-top ${g === 'noblur' ? 'glass' : ''}">
+    <div><span class="lbl">Device</span><strong>${v.device.replace('GravaStar ', '')}</strong><span class="fw">GravaStar · firmware <span class="mono">${v.fw}</span></span></div>
+    ${btn('conn', `<span class="A-link" role="img" aria-label="Connected over ${v.connLabel}"><span class="${v.wired ? 'on' : ''}">Wired</span><span class="${v.wired ? '' : 'on'}">2.4G</span><span title="Bluetooth: not on this firmware">BT</span></span>`, '', 'Preview: toggle connection')}
+  </header>
+  <div class="A-body">
+    ${btn('batt', v.batt
+      ? `${battSvg(v.batt, 54)}<div><div class="big">${v.batt.pct}<span style="font-size:.5em;font-weight:500;margin-left:2px">%</span></div><div class="sub">${v.battLine}</div></div>`
+      : `${battSvg(null, 54)}<div class="unk">Battery not reported on cable<small>The keyboard only reports charge over 2.4G. Unplug to read it.</small></div>`,
+      'A-power' + (g === 'noblur' ? ' glass' : ''), 'Preview: cycle battery')}
+    <section class="A-group ${g === 'noblur' ? 'glass' : ''}">
+      <h2 class="lbl">Lighting</h2>
+      ${btn('effect', `<span class="k">Effect</span><span class="v"><span class="val">${v.effect}</span>${v.animated ? '<span class="dim">animated</span>' : ''}</span>`, 'A-row')}
+      ${btn('bright', `<span class="k">Brightness</span><span class="v">${steps(v.brightness, 1, 4)}<span class="dim">of 4</span></span>`, 'A-row')}
+      ${btn('speed', `<span class="k">Speed</span><span class="v">${steps(v.speed, 0, 4)}<span class="dim">of 0–4</span></span>`, 'A-row')}
+      ${btn('color', `<span class="k">Colour</span><span class="v">${swatch(v.col)}${colourText(v.col)}</span>`, 'A-row', 'Preview: next palette colour')}
+      <div style="height:6px"></div>
+      <h2 class="lbl">Power</h2>
+      ${btn('sleep', v.wired
+        ? `<span class="k">Sleep timer</span><span class="v dim">Wireless only — not in effect on cable</span>`
+        : `<span class="k">Sleep timer</span><span class="v"><span class="val">${v.sleepLabel}</span><span class="dim">idle → sleep</span></span>`, 'A-row')}
+    </section>
+  </div>
+  <nav class="A-nav ${g === 'noblur' ? 'glass' : ''}" aria-label="Areas">
+    <button aria-current="page">${I.device}Device</button><button>${I.light}Lighting</button><button>${I.keys}Keys</button><button>${I.macro}Macros</button>
+  </nav>
+</div>`;
+
+/* structure D */
+const renderD = (v, g, mode) => `
+<div class="app D">
+  <aside class="D-rail ${g === 'frost' ? 'glass' : ''}">
+    ${g === 'rail' ? fieldHtml(v, mode) + '<div class="rail-glass glass"></div>' : ''}
+    <div class="D-glance">
+      ${btn('conn', `<svg class="ic" viewBox="0 0 24 24">${v.wired ? I.plug : I.radio}</svg><span class="n">${v.connLabel}</span><span class="t">${v.connLabel}</span>`, '', 'Preview: toggle connection')}
+      ${btn('batt', v.batt
+        ? `${battSvg(v.batt, 26)}<span class="n">${v.batt.pct}%</span><span class="t">${v.batt.pct} % · ${v.battLine.toLowerCase()}</span>`
+        : `${battSvg(null, 26)}<span class="n">n/a</span><span class="t">Battery n/a on cable</span>`, '', 'Preview: cycle battery')}
+      ${btn('effect', `${swatch(v.col)}<span class="n">${v.effect.split(' ')[0]}</span><span class="t">${v.effect}</span>`, '', 'Preview: choose effect')}
+    </div>
+    <nav class="D-nav" aria-label="Areas">
+      <button aria-current="page">${I.device}Device</button><button>${I.light}Lighting</button><button>${I.keys}Keys</button><button>${I.macro}Macros</button>
+    </nav>
+  </aside>
+  <main class="D-panel">
+    <header><strong>${v.device}</strong><span class="fw">Firmware <span class="mono">${v.fw}</span> · read at connect</span></header>
+    <section class="D-sec ${g === 'frost' ? 'glass' : ''}">
+      <h2 class="lbl">Connection</h2>
+      ${btn('conn', `<div class="D-stmt">${v.wired ? 'On cable' : '2.4G wireless'}${v.batt ? `<span>· ${v.batt.pct} %</span>` : ''}<span class="sub">${v.batt ? v.battLine : 'USB data + charge'}</span></div>`, '', 'Preview: toggle connection')}
+      ${v.wired
+        ? `<div class="D-note">Battery is not reported over cable. The sleep timer is wireless-only, so it is not listed below.</div>`
+        : (v.batt.charging ? `<div class="D-note">Charging over the dongle link — the reading updates each poll.</div>` : `<div class="D-note muted">Battery read once at connect; refresh re-sends the poll.</div>`)}
+    </section>
+    <section class="D-sec ${g === 'frost' ? 'glass' : ''}">
+      <h2 class="lbl">Lighting</h2>
+      <div class="D-rows">
+        ${btn('effect', `<span class="k">Effect</span><span class="v">${v.effect}${v.animated ? '<span class="dim">animated</span>' : ''}</span>`, 'D-row')}
+        ${btn('color', `<span class="k">Colour</span><span class="v">${swatch(v.col)}${v.col.kind === 'single' ? `<span>${v.col.label}</span><span class="dim">palette ${v.col.idx}${v.col.why ? ' · ' + v.col.why : ''}</span>` : `<span class="dim">${v.col.label} — ${v.col.why}</span>`}</span>`, 'D-row', 'Preview: next palette colour')}
+        ${btn('bright', `<span class="k">Brightness</span><span class="v">${steps(v.brightness, 1, 4)}</span>`, 'D-row')}
+        ${btn('speed', `<span class="k">Speed</span><span class="v">${steps(v.speed, 0, 4)}</span>`, 'D-row')}
+      </div>
+    </section>
+    ${v.wired ? '' : `<section class="D-sec ${g === 'frost' ? 'glass' : ''}">
+      <h2 class="lbl">Sleep</h2>
+      ${btn('sleep', `<div class="D-stmt">${v.sleepLabel}<span class="sub">idle before the keyboard sleeps · 0.5–20 min</span></div>`, '', 'Preview: cycle sleep')}
+    </section>`}
+  </main>
+</div>`;
+
+/* wiring */
+const frames = {};
+for (const k of Object.keys(states)) frames[k] = document.getElementById('frame-' + k);
+const fieldMode = () => document.documentElement.dataset.field;
+const render = k => {
+  const v = view(states[k]);
+  const mode = fieldMode();
+  const glow = v.effect === 'Off' ? 'transparent' : (v.fieldColour || '#b56bff');
+  frames[k].style.setProperty('--c-glow', glow);
+  frames[k].style.setProperty('--strip', v.effect === 'Off' ? 'transparent' : v.col.kind === 'single' ? v.col.hex : 'linear-gradient(180deg,#ff4d4d,#ffe14d,#4de07a,#3ee0e8,#4d7bff,#b56bff)');
+  const body = STRUCT[k] === 'A' ? renderA(v, k) : renderD(v, k, mode);
+  frames[k].innerHTML = (k === 'rail' ? '' : fieldHtml(v, mode)) + body;
+  renderTokens();
+};
+const act = (k, name) => {
+  const s = states[k];
+  switch (name) {
+    case 'conn': s.connection = s.connection === 'wired' ? '2.4g' : 'wired'; break;
+    case 'batt': if (s.connection !== 'wired') s.battIdx = (s.battIdx + 1) % BATT.length; break;
+    case 'bright': s.brightness = s.brightness % 4 + 1; break;
+    case 'speed': s.speed = (s.speed + 1) % 5; break;
+    case 'color': if (colourOf(s).kind === 'single') s.colorIdx = (s.colorIdx + 1) % 8; break;
+    case 'sleep': if (s.connection !== 'wired') s.sleep = SLEEPS[(SLEEPS.indexOf(s.sleep) + 1) % SLEEPS.length]; break;
+    case 'effect': openPicker(k); return;
+  }
+  render(k);
+};
+const openPicker = k => {
+  const s = states[k];
+  const el = document.createElement('div');
+  el.className = 'picker';
+  el.innerHTML = `<div class="sheet" role="dialog" aria-label="Preview: choose effect"><header><strong>Effect</strong><span>preview only — 13 names from the firmware</span></header>
+    <ul>${EFFECTS.map(e => `<li><button type="button" data-fx="${e}" aria-current="${e === s.effect}">${e}<small>${MIXED.has(e) ? 'mixed' : e === 'Custom' ? 'per-key' : e === 'Off' ? '' : 'single'}</small></button></li>`).join('')}</ul></div>`;
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-fx]');
+    if (b) { s.effect = b.dataset.fx; el.remove(); render(k); return; }
+    if (e.target === el) el.remove();
+  });
+  frames[k].appendChild(el);
+  el.querySelector('[aria-current="true"]').focus();
+};
+for (const k of Object.keys(frames)) {
+  frames[k].addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if (b && frames[k].contains(b)) act(k, b.dataset.act);
+  });
+}
+
+/* page controls */
+let activeOpt = 'frost';
+const tabs = document.getElementById('optTabs');
+tabs.addEventListener('click', e => {
+  const b = e.target.closest('[data-opt]'); if (!b) return;
+  activeOpt = b.dataset.opt;
+  tabs.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  document.querySelectorAll('.opt').forEach(o => o.toggleAttribute('data-active', o.dataset.opt === activeOpt));
+  renderTokens();
+});
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input,textarea')) return;
+  const i = ['1','2','3','4'].indexOf(e.key);
+  if (i >= 0) tabs.querySelectorAll('button')[i].click();
+});
+const widthSeg = document.getElementById('widthSeg');
+const rulers = document.querySelectorAll('[data-ruler]');
+const setWidth = w => {
+  document.documentElement.style.setProperty('--frame-w', w + 'px');
+  widthSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.w === String(w)));
+  rulers.forEach(r => r.textContent = `${w} × 640 px window`);
+};
+widthSeg.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if (b) setWidth(+b.dataset.w); });
+const themeSeg = document.getElementById('themeSeg');
+themeSeg.addEventListener('click', e => {
+  const b = e.target.closest('[data-theme]'); if (!b) return;
+  document.documentElement.dataset.theme = b.dataset.theme;
+  themeSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  renderTokens();
+});
+const fieldSeg = document.getElementById('fieldSeg');
+fieldSeg.addEventListener('click', e => {
+  const b = e.target.closest('[data-field]'); if (!b) return;
+  document.documentElement.dataset.field = b.dataset.field;
+  fieldSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  Object.keys(frames).forEach(render);
+});
+
+/* composited contrast */
+const parseColor = str => {
+  str = str.trim();
+  if (str[0] === '#') return [1,3,5].map(i => parseInt(str.slice(i, i + 2), 16)).concat([1]);
+  const m = str.match(/rgba?\(([^)]+)\)/);
+  const p = m[1].split(/[\s,\/]+/).filter(Boolean).map(Number);
+  return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1];
+};
+const lin = c => { c /= 255; return c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4; };
+const lum = rgb => .2126 * lin(rgb[0]) + .7152 * lin(rgb[1]) + .0722 * lin(rgb[2]);
+const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+const over = (top, a, bot) => bot.slice(0, 3).map((c, i) => c * (1 - a) + top[i] * a);
+const SURFACES = {
+  frost: [['--glass-frost', 'card over field']],
+  sheet: [['--glass-sheet', 'sheet over field']],
+  rail: [['--glass-rail', 'rail over field'], [null, 'solid content panel']],
+  noblur: [['--glass-noblur', 'pane over field']],
+};
+const renderTokens = () => {
+  const cs = getComputedStyle(document.documentElement);
+  const val = n => cs.getPropertyValue(n).trim();
+  const bg = parseColor(val('--bg'));
+  const cap = parseFloat(val('--cap'));
+  const mode = fieldMode();
+  const v = view(states[activeOpt]);
+  const staticEnds = [parseColor(val('--static-a')), parseColor(val('--static-b'))];
+  const ambient = (hexes, lvl) => hexes.map(h => over(parseColor(h), cap * lvl, bg));
+  const nowFields = mode === 'static' ? staticEnds
+    : v.effect === 'Off' ? [bg]
+    : v.col.kind === 'single' ? ambient([v.col.hex], LVL[v.brightness])
+    : ambient(v.col.kind === 'perkey' ? ['#3ee0e8', '#b56bff'] : MIX_STOPS, LVL[v.brightness]);
+  const worstFields = mode === 'static' ? staticEnds : ambient(PALETTE.map(p => p[1]).concat(MIX_STOPS), 1);
+  const fgs = [['--text', 'body text'], ['--text-2', 'secondary text']].concat(STRUCT[activeOpt] === 'A' ? [['--accent', 'accent as text (active tab)']] : []);
+  const rows = [];
+  for (const [fillVar, why] of SURFACES[activeOpt]) {
+    const fill = fillVar ? parseColor(val(fillVar)) : null;
+    const comp = f => fill ? over(fill, fill[3], f) : bg;
+    const list = fillVar ? fgs : fgs.concat([['--text-3', 'muted label text']]);
+    for (const [fgVar, fgWhy] of list) {
+      const fg = parseColor(val(fgVar));
+      const nowR = Math.min(...(fillVar ? nowFields : [bg]).map(f => ratio(fg, comp(f))));
+      const worstR = Math.min(...(fillVar ? worstFields : [bg]).map(f => ratio(fg, comp(f))));
+      const worstPx = (fillVar ? worstFields : [bg]).map(f => comp(f)).sort((a, b) => ratio(fg, a) - ratio(fg, b))[0].map(Math.round);
+      const cell = r => `<td class="${r >= 4.5 ? 'pass' : 'fail'}">${r.toFixed(2)} : 1${r >= 4.5 ? '' : ' — below 4.5'}</td>`;
+      rows.push(`<tr><td><span class="sw" style="background:${val(fgVar)}"></span><code>${fgVar}</code></td><td>${fgWhy}</td><td>${why}${fillVar ? ` <code>${val(fillVar)}</code>` : ''}</td><td><span class="sw" style="background:rgb(${worstPx})"></span>rgb(${worstPx.join(', ')})</td>${cell(nowR)}${cell(worstR)}</tr>`);
+    }
+  }
+  document.getElementById('tokenTable').innerHTML = `<thead><tr><th>Foreground</th><th>Role</th><th>Surface (${activeOpt}, ${val('--bg') === '#000000' ? 'black' : document.documentElement.dataset.theme}, ${mode})</th><th>Worst composited pixel</th><th>Now</th><th>Worst</th></tr></thead><tbody>${rows.join('')}</tbody>`;
+};
+
+setWidth(480);
+Object.keys(frames).forEach(render);
+})();
+</script>
+</body>
+</html>

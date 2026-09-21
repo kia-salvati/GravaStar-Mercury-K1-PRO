@@ -1,0 +1,761 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>K1 PRO status screen — design options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wdth,wght@0,62..125,100..900;1,62..125,100..900&display=swap" rel="stylesheet">
+<style>
+/* ---------- tokens ---------- */
+:root{
+  --bg:#141210; --surface:#1c1a17; --s2:#26231f; --s3:#302c27; --line:#3a352e; --line-2:#4a443b;
+  --text:#efe9df; --text-2:#b8ae9f; --text-3:#a59b8d;
+  --accent:#f5b043; --accent-ink:#1a1206; --ok:#8fd694; --bad:#ff8a7a;
+  --page-bg:#0e0d0b; --page-text:#e6e0d6; --page-text-2:#aaa193;
+  --radius:10px; --frame-w:480px;
+}
+:root[data-theme="light"]{
+  --bg:#f1ece4; --surface:#fbf9f5; --s2:#e8e2d8; --s3:#d9d1c4; --line:#cfc6b8; --line-2:#b9ae9d;
+  --text:#1b1814; --text-2:#524a40; --text-3:#5f574c;
+  --accent:#83480a; --accent-ink:#fff8ec; --ok:#1d5f2b; --bad:#9c2d1c;
+  --page-bg:#e6e0d6; --page-text:#1b1814; --page-text-2:#524a40;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  background:var(--page-bg); color:var(--page-text);
+  font-family:"Archivo",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-variant-numeric:tabular-nums; font-size:15px; line-height:1.45;
+}
+button{font:inherit;color:inherit}
+h1,h2,h3{margin:0;font-weight:600;letter-spacing:-.01em}
+p{margin:0 0 .6em}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
+
+/* ---------- page chrome ---------- */
+.page-head{padding:28px 24px 12px;max-width:1380px;margin:0 auto}
+.page-head h1{font-size:26px;font-stretch:88%;font-weight:700}
+.page-head .sub{color:var(--page-text-2);max-width:72ch;margin-top:6px}
+.controls{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:center;margin-top:18px;padding-top:14px;border-top:1px solid var(--line)}
+.ctl-group{display:flex;align-items:center;gap:8px}
+.ctl-group .k{font-stretch:75%;text-transform:uppercase;letter-spacing:.09em;font-size:12px;color:var(--page-text-2);margin-right:2px}
+.seg{display:inline-flex;border:1px solid var(--line-2);border-radius:8px;overflow:hidden;background:var(--surface)}
+.seg button{background:none;border:0;padding:7px 13px;cursor:pointer;color:var(--page-text-2);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.seg .tag{display:inline-block;font-stretch:75%;letter-spacing:.06em;font-size:11px;margin-right:6px;opacity:.85}
+
+main{max-width:1380px;margin:0 auto;padding:14px 24px 60px}
+.opt{display:none;grid-template-columns:auto minmax(280px,1fr);gap:28px;align-items:start}
+.opt[data-active]{display:grid}
+@media (max-width:1000px){.opt{grid-template-columns:1fr}}
+.stage{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.ruler{font-stretch:75%;letter-spacing:.08em;text-transform:uppercase;font-size:12px;color:var(--page-text-2)}
+.frame{
+  width:var(--frame-w);height:640px;position:relative;overflow:hidden;
+  background:var(--bg);color:var(--text);border:1px solid var(--line-2);border-radius:var(--radius);
+  container-type:inline-size;container-name:frame;
+  font-size:13.5px;transition:width .25s ease;
+}
+.notes{padding-top:4px;max-width:66ch}
+.notes h2{font-size:20px;margin-bottom:2px;font-stretch:90%}
+.notes .idea{color:var(--page-text-2);font-size:15px;margin-bottom:14px}
+.notes h3{font-stretch:75%;text-transform:uppercase;letter-spacing:.1em;font-size:12px;color:var(--page-text-2);margin:16px 0 6px}
+.notes ul{margin:0;padding-left:18px}
+.notes li{margin:3px 0}
+.notes kbd{font:inherit;font-size:.9em;background:var(--surface);border:1px solid var(--line-2);border-radius:5px;padding:0 6px}
+
+.tokens{max-width:1380px;margin:0 auto;padding:0 24px 60px}
+.tokens h2{font-size:18px;margin-bottom:8px}
+.tokens table{border-collapse:collapse;font-size:14px}
+.tokens th,.tokens td{text-align:left;padding:5px 14px 5px 0;border-bottom:1px solid var(--line)}
+.tokens th{font-stretch:75%;text-transform:uppercase;letter-spacing:.08em;font-size:12px;color:var(--page-text-2);font-weight:500}
+.tokens .sw{display:inline-block;width:14px;height:14px;border-radius:3px;vertical-align:-2px;margin-right:6px;border:1px solid var(--line-2)}
+.tokens .fail{color:var(--bad);font-weight:600}
+.tokens .pass{color:var(--ok)}
+
+/* ---------- shared in-app primitives ---------- */
+.app{position:absolute;inset:0;display:flex;flex-direction:column}
+.lbl{font-stretch:75%;text-transform:uppercase;letter-spacing:.09em;font-size:11px;color:var(--text-3);font-weight:500}
+.act{background:none;border:0;padding:0;margin:0;text-align:left;cursor:pointer;border-radius:6px;font:inherit;color:inherit}
+.act:hover{background:color-mix(in srgb,var(--text) 6%,transparent)}
+.act:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.val{font-weight:600;color:var(--text)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.95em;letter-spacing:.01em}
+
+.steps{display:inline-flex;align-items:center;gap:3px;vertical-align:middle}
+.steps i{display:block;width:10px;height:14px;border-radius:2px;background:var(--s3);border:1px solid var(--line-2)}
+.steps i.on{background:var(--accent);border-color:var(--accent)}
+.steps b{font-weight:600;margin-left:6px;font-size:.95em}
+.steps.lg i{width:14px;height:22px;border-radius:3px}
+.steps.sm i{width:7px;height:11px;gap:2px}
+
+.batt{display:inline-block;vertical-align:middle;overflow:visible}
+.batt .case{fill:none;stroke:var(--text-2);stroke-width:1.5}
+.batt .nub{fill:var(--text-2)}
+.batt .fill{fill:var(--ok)}
+.batt.low .fill{fill:var(--bad)}
+.batt.charging .fill{animation:chg 2.2s ease-in-out infinite}
+.batt .bolt{fill:var(--accent-ink);stroke:var(--accent);stroke-width:1;stroke-linejoin:round}
+.batt.unknown .case{stroke-dasharray:3 2.5}
+.batt.unknown .plug{fill:none;stroke:var(--text-2);stroke-width:1.5;stroke-linecap:round}
+@keyframes chg{0%,100%{opacity:.5}50%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.batt.charging .fill{animation:none}}
+
+.swatch{display:inline-block;width:18px;height:18px;border-radius:5px;border:1px solid var(--line-2);vertical-align:middle;flex:none}
+.swatch.mix{background:conic-gradient(#ff5b5b,#ffc23a,#5be07f,#3ec6ff,#b06bff,#ff5b5b)}
+
+.picker{position:absolute;inset:0;background:color-mix(in srgb,var(--bg) 72%,transparent);z-index:5;display:flex;align-items:flex-end;justify-content:center;padding:12px}
+.picker .sheet{background:var(--surface);border:1px solid var(--line-2);border-radius:12px;width:min(100%,360px);max-height:100%;overflow:auto;box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.picker header{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+.picker header span{color:var(--text-2);font-size:12px}
+.picker ul{list-style:none;margin:0;padding:6px;display:grid;grid-template-columns:1fr 1fr;gap:2px}
+.picker li button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:7px;background:none;border:0;cursor:pointer}
+.picker li button:hover{background:var(--s2)}
+.picker li button[aria-current="true"]{background:var(--accent);color:var(--accent-ink);font-weight:600}
+
+.hint-info{color:var(--text);}
+.hint-info::before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--accent);margin-right:8px;vertical-align:1px}
+
+/* ---------- Option A: readout stack ---------- */
+.A{padding:0}
+.A-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+.A-top strong{display:block;font-size:17px;font-weight:600;letter-spacing:-.01em}
+.A-top .fw{color:var(--text-2);font-size:12.5px}
+.A-link{display:inline-flex;border:1px solid var(--line-2);border-radius:7px;overflow:hidden;font-size:12px;font-weight:600;flex:none}
+.A-link span{padding:6px 9px;color:var(--text-3);border-right:1px solid var(--line)}
+.A-link span:last-child{border-right:0}
+.A-link span.on{background:var(--accent);color:var(--accent-ink)}
+.A-body{flex:1;overflow:auto;display:grid;grid-template-columns:1fr;align-content:start}
+.A-power{display:flex;align-items:center;gap:16px;padding:18px 18px;border-bottom:1px solid var(--line);width:100%}
+.A-power .big{font-size:38px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.A-power .sub{color:var(--text-2);margin-top:4px}
+.A-power .unk{font-size:16px;font-weight:600;line-height:1.25}
+.A-power .unk small{display:block;font-size:13px;color:var(--text-2);font-weight:400;margin-top:3px}
+.A-group{padding:10px 18px 12px;border-bottom:1px solid var(--line)}
+.A-group h2{margin-bottom:4px}
+.A-row{display:grid;grid-template-columns:92px 1fr;align-items:center;min-height:36px;gap:10px;width:100%;padding:2px 6px;margin:0 -6px}
+.A-row .k{color:var(--text-2)}
+.A-row .v{display:flex;align-items:center;gap:8px;min-width:0}
+.A-row.off .k,.A-row.off .v{color:var(--text-3)}
+.A-nav{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);background:var(--surface)}
+.A-nav button{background:none;border:0;padding:9px 4px 10px;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11.5px;color:var(--text-2);cursor:pointer;font-stretch:88%}
+.A-nav button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.A-nav button[aria-current="page"]{color:var(--accent)}
+@container frame (min-width:700px){
+  .A-body{grid-template-columns:1fr 1fr;grid-template-rows:auto 1fr;align-content:stretch}
+  .A-power{grid-row:1/3;border-right:1px solid var(--line);align-items:flex-start;flex-direction:column;justify-content:center;gap:14px}
+  .A-power .big{font-size:56px}
+  .A-nav{grid-template-columns:repeat(4,max-content);justify-content:start;padding-left:10px}
+  .A-nav button{flex-direction:row;padding:10px 14px;font-size:13px}
+}
+
+/* ---------- Option B: tiles ---------- */
+.B-id{display:flex;justify-content:space-between;align-items:center;padding:14px 16px 10px;gap:10px}
+.B-id strong{font-size:16px;font-weight:600}
+.B-id .fw{color:var(--text-2);font-size:12.5px;margin-left:8px}
+.B-conn{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border:1px solid var(--line-2);border-radius:20px;font-weight:600;font-size:12.5px}
+.B-conn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.B-conn .dot{width:8px;height:8px;border-radius:50%;background:var(--ok)}
+.B-grid{flex:1;overflow:auto;padding:4px 16px 16px;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:min-content;gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-height:92px;width:100%}
+.tile.span2{grid-column:span 2}
+.tile .lbl{margin-bottom:2px}
+.tile-power{flex-direction:row;align-items:center;gap:14px}
+.tile-power .num{font-size:40px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.tile-power .sub{color:var(--text-2);margin-top:3px}
+.tile-power .unk{font-size:15px;font-weight:600;line-height:1.3}
+.tile-power .unk small{display:block;color:var(--text-2);font-weight:400;font-size:12.5px}
+.tile-effect .name{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+.tile-effect .meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:6px;align-items:center}
+.tile-effect .meta .act{display:inline-flex;align-items:center;gap:8px;padding:3px 6px;margin:-3px -6px}
+.tile-effect .meta .k{color:var(--text-2);font-size:12px}
+.tile.dim .lbl,.tile.dim .val,.tile.dim .sub{color:var(--text-3)}
+.tile .big{font-size:22px;font-weight:700;letter-spacing:-.02em}
+.tile .sub{color:var(--text-2);font-size:12.5px}
+.B-doors{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.door{border:1px dashed var(--line-2);background:transparent;border-radius:12px;padding:12px 12px;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:4px;min-height:80px}
+.door:hover{border-style:solid;background:var(--surface)}
+.door .t{font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.door .t svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.door .d{color:var(--text-2);font-size:12px}
+@container frame (min-width:700px){
+  .B-grid{grid-template-columns:repeat(4,1fr)}
+  .tile{min-height:112px}
+  .B-doors{grid-column:span 2;grid-template-columns:1fr;align-content:start}
+  .door{min-height:0;flex-direction:row;align-items:center;justify-content:space-between}
+  .door .t{flex:1}
+}
+
+/* ---------- Option C: keyboard-first ---------- */
+.C-kb{position:relative;margin:14px 14px 0;border-radius:10px;overflow:hidden;background:var(--s3);aspect-ratio:16.6/6.6;flex:none}
+.C-glow{position:absolute;inset:0;background:var(--s3)}
+.C-kb svg{position:absolute;inset:0;width:100%;height:100%;display:block}
+.C-kb .plate{fill:var(--surface)}
+.C-kb.fx-windmill .C-glow{background:conic-gradient(from 0deg at 50% 50%,var(--c) 0 22%,transparent 26% 50%,var(--c) 50% 72%,transparent 76%);animation:spin var(--dur) linear infinite;inset:-40%}
+.C-kb.fx-wave .C-glow{background:linear-gradient(90deg,transparent,var(--c) 35%,transparent 70%);background-size:200% 100%;animation:slide var(--dur) linear infinite}
+.C-kb.fx-sine .C-glow{background:linear-gradient(90deg,transparent,var(--c) 25%,transparent 50%,var(--c) 75%,transparent);background-size:200% 100%;animation:slide var(--dur) ease-in-out infinite}
+.C-kb.fx-waterfall .C-glow{background:linear-gradient(180deg,transparent,var(--c) 40%,transparent 80%);background-size:100% 200%;animation:fall var(--dur) linear infinite}
+.C-kb.fx-rainbow .C-glow{background:linear-gradient(90deg,#ff5b5b,#ffc23a,#5be07f,#3ec6ff,#b06bff,#ff5b5b);background-size:200% 100%;animation:slide var(--dur) linear infinite}
+.C-kb.fx-stars .C-glow{background:radial-gradient(circle at 18% 30%,var(--c) 0 3%,transparent 4%),radial-gradient(circle at 63% 70%,var(--c) 0 3%,transparent 4%),radial-gradient(circle at 82% 25%,var(--c) 0 2.5%,transparent 3.5%),radial-gradient(circle at 40% 55%,var(--c) 0 2%,transparent 3%),var(--s3);animation:twinkle var(--dur) ease-in-out infinite}
+.C-kb.fx-bloom .C-glow{background:radial-gradient(circle at 50% 50%,var(--c) 0 20%,transparent 60%);animation:bloom var(--dur) ease-in-out infinite}
+.C-kb.fx-solid .C-glow{background:var(--c)}
+.C-kb.fx-solid.mix .C-glow,.C-kb.fx-wave.mix .C-glow,.C-kb.fx-sine.mix .C-glow,.C-kb.fx-waterfall.mix .C-glow,.C-kb.fx-windmill.mix .C-glow,.C-kb.fx-stars.mix .C-glow,.C-kb.fx-bloom.mix .C-glow{background:linear-gradient(120deg,#ff5b5b,#ffc23a,#5be07f,#3ec6ff,#b06bff)}
+.C-kb.fx-off .C-glow{background:var(--s3);animation:none}
+.C-kb .C-glow{opacity:var(--lvl)}
+.C-kb.fx-off .C-glow{opacity:1}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slide{to{background-position:-200% 0}}
+@keyframes fall{to{background-position:0 -200%}}
+@keyframes twinkle{0%,100%{opacity:calc(var(--lvl) * .55)}50%{opacity:var(--lvl)}}
+@keyframes bloom{0%,100%{transform:scale(.6)}50%{transform:scale(1.5)}}
+@media (prefers-reduced-motion:reduce){.C-glow{animation:none!important}}
+.C-caption{display:flex;justify-content:space-between;align-items:baseline;padding:8px 16px 0;gap:10px}
+.C-caption .name{font-size:19px;font-weight:700;letter-spacing:-.02em}
+.C-caption .fw{color:var(--text-2);font-size:12.5px}
+.C-strip{display:flex;flex-wrap:wrap;gap:6px;padding:10px 14px 4px}
+.chip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line-2);background:var(--surface);border-radius:8px;padding:6px 9px;font-size:12.5px;font-weight:500;line-height:1.2}
+.chip .k{color:var(--text-2);font-weight:400}
+.chip.attn{border-color:var(--accent);color:var(--text)}
+.chip svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.chip .steps.sm b{font-size:12.5px;margin-left:4px}
+.C-seg{display:grid;grid-template-columns:repeat(4,1fr);margin:10px 14px 0;border:1px solid var(--line-2);border-radius:9px;overflow:hidden;background:var(--surface)}
+.C-seg button{background:none;border:0;border-right:1px solid var(--line);padding:8px 4px;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer}
+.C-seg button:last-child{border-right:0}
+.C-seg button[aria-current="page"]{background:var(--s3);color:var(--text)}
+.C-detail{flex:1;overflow:auto;padding:8px 16px 14px}
+.C-detail dl{margin:0;display:grid;grid-template-columns:96px 1fr;gap:0 12px}
+.C-detail dt{color:var(--text-2);padding:7px 0;border-bottom:1px solid var(--line)}
+.C-detail dd{margin:0;padding:7px 0;border-bottom:1px solid var(--line);font-weight:500}
+.C-detail dd.info{color:var(--text)}
+.C-detail dd .steps{margin-left:2px}
+.C-foot{padding:8px 16px 12px;color:var(--text-2);font-size:12.5px}
+.C-left,.C-right{display:contents}
+@container frame (min-width:700px){
+  .C{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto auto auto 1fr;gap:0 18px;padding:14px 18px 10px}
+  .C-kb{grid-column:1/-1;height:250px;width:auto;aspect-ratio:16.6/6.6;margin:0 auto}
+  .C-caption{grid-column:1;grid-row:2;padding:12px 2px 0}
+  .C-strip{grid-column:1;grid-row:3;padding:10px 0 0;align-content:start}
+  .C-seg{grid-column:2;grid-row:2;margin:12px 0 0}
+  .C-detail{grid-column:2;grid-row:3/5;padding:10px 2px 0}
+  .C-detail dl{grid-template-columns:110px 1fr}
+  .C-foot{grid-column:1;grid-row:4;padding:10px 2px 0}
+}
+
+/* ---------- Option D: status rail + panel ---------- */
+.D{flex-direction:row}
+.D-rail{width:60px;flex:none;background:var(--surface);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:10px 0}
+.D-glance{display:flex;flex-direction:column;gap:6px;padding:0 8px 10px;border-bottom:1px solid var(--line)}
+.D-glance .act{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;font-size:11px;font-weight:600;text-align:center}
+.D-glance .act .t{display:none}
+.D-glance .act svg.ic{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.D-glance .n{font-size:11px;font-weight:600;color:var(--text-2)}
+.D-nav{display:flex;flex-direction:column;gap:2px;padding:10px 8px}
+.D-nav button{background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 4px;border-radius:8px;color:var(--text-2);font-size:10.5px;font-stretch:80%;cursor:pointer}
+.D-nav button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.D-nav button[aria-current="page"]{background:var(--s3);color:var(--text)}
+.D-panel{flex:1;overflow:auto;padding:16px 18px 18px;min-width:0}
+.D-panel header{margin-bottom:12px}
+.D-panel header strong{font-size:17px;font-weight:600;display:block}
+.D-panel header .fw{color:var(--text-2);font-size:12.5px}
+.D-sec{border-top:1px solid var(--line);padding:12px 0 10px}
+.D-sec h2{margin-bottom:8px}
+.D-stmt{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.2;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.D-stmt .sub{display:block;font-size:13px;color:var(--text-2);font-weight:400;margin-top:3px;letter-spacing:0}
+.D-note{margin-top:8px;padding:8px 10px;border-left:3px solid var(--accent);background:var(--surface);border-radius:0 8px 8px 0;font-size:13px}
+.D-note.muted{border-left-color:var(--line-2);color:var(--text-2)}
+.D-rows{display:grid;grid-template-columns:1fr;gap:2px 20px}
+.D-row{display:grid;grid-template-columns:88px 1fr;align-items:center;min-height:34px;gap:8px;padding:1px 6px;margin:0 -6px;width:100%}
+.D-row .k{color:var(--text-2)}
+.D-row .v{display:flex;align-items:center;gap:8px;font-weight:600}
+@container frame (min-width:700px){
+  .D-rail{width:200px}
+  .D-glance .act{flex-direction:row;justify-content:flex-start;gap:10px;padding:7px 8px;font-size:12.5px;text-align:left}
+  .D-glance .act .t{display:block}
+  .D-glance .n{display:none}
+  .D-nav button{flex-direction:row;justify-content:flex-start;gap:10px;padding:8px 10px;font-size:13px;font-stretch:100%}
+  .D-rows{grid-template-columns:1fr 1fr}
+  .D-panel{padding:20px 26px}
+}
+</style>
+</head>
+<body>
+
+<header class="page-head">
+  <h1>Mercury K1 PRO — status screen, four structures</h1>
+  <p class="sub">Stage 1 is read-only. Every frame below is the real 480 × 640 window; the width toggle stretches it to 900 to check it does not go hollow. Inside a frame, click any value to change the <em>preview</em> state (connection, battery, effect, stages, colour mode, sleep) — those clicks are design-only and stand in for readings the keyboard will send.</p>
+  <div class="controls">
+    <div class="ctl-group"><span class="k">Option</span>
+      <div class="seg" id="optTabs" role="tablist">
+        <button role="tab" data-opt="a" aria-pressed="true"><span class="tag">A</span>Readout stack</button>
+        <button role="tab" data-opt="b" aria-pressed="false"><span class="tag">B</span>Tiles + doors</button>
+        <button role="tab" data-opt="c" aria-pressed="false"><span class="tag">C</span>Keyboard first</button>
+        <button role="tab" data-opt="d" aria-pressed="false"><span class="tag">D</span>Status rail</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Window</span>
+      <div class="seg" id="widthSeg">
+        <button data-w="480" aria-pressed="true">480 × 640</button>
+        <button data-w="900" aria-pressed="false">900 × 640</button>
+      </div>
+    </div>
+    <div class="ctl-group"><span class="k">Theme</span>
+      <div class="seg" id="themeSeg">
+        <button data-theme="dark" aria-pressed="true">Dark</button>
+        <button data-theme="light" aria-pressed="false">Light</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+<section class="opt" data-opt="a" data-active>
+  <div class="stage"><div class="frame" id="frame-a"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>A — Readout stack</h2>
+    <p class="idea">One vertical column, top to bottom in order of how often you glance: identity and link, then power as the only large element, then lighting as label/value rows, then a bottom tab bar to the other three areas. It behaves like a tray utility, not a page.</p>
+    <h3>Structure</h3>
+    <ul>
+      <li>Header carries the device name, firmware and a three-slot link indicator (Wired / 2.4G / BT). BT is drawn as an empty slot now so Bluetooth is one more value, not a redesign.</li>
+      <li>Power block is the single large number on screen. On cable it becomes a full-weight sentence, not a greyed-out zero.</li>
+      <li>Lighting and Power groups are strict 92 px label / value rows; long effect names wrap inside the value column instead of pushing the label.</li>
+      <li>Sleep timer on cable stays in place but drops to muted text and says why — the row's absence would read as a bug, not a state.</li>
+    </ul>
+    <h3>Navigation</h3>
+    <ul><li>Bottom tab bar: Device (home) · Lighting · Keys · Macros. At 900 px the bar becomes a horizontal row of labelled buttons; the body splits into power (left) and lighting (right).</li></ul>
+    <h3>Try</h3>
+    <ul>
+      <li>Click the link indicator → wired; battery becomes "not reported on cable", sleep row mutes.</li>
+      <li>Click the battery number → cycles 100 % full → 23 % charging (pulse) → 61 % → 8 % low.</li>
+      <li>Click the effect name → picker; brightness / speed blocks → next stage; colour → Colour Mixing.</li>
+    </ul>
+    <h3>Default state here</h3>
+    <ul><li>Happy path as read from the real board: 2.4G, 100 % full, Windmill, brightness 1, speed 0, #ffffff, sleep 1 min.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="b">
+  <div class="stage"><div class="frame" id="frame-b"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>B — Tiles + doors</h2>
+    <p class="idea">A dashboard of unequal tiles, where the tiles that <em>are</em> the home screen (power, effect, sleep, firmware) look different from the tiles that <em>lead somewhere</em> (dashed "doors" to Lighting, Keys, Macros). Navigation is content, not chrome.</p>
+    <h3>Structure</h3>
+    <ul>
+      <li>Identity strip with the connection as a pill (click to toggle).</li>
+      <li>Power tile spans the row; it is the only tile with a 40 px number. On cable it changes shape to a two-line statement with the same weight.</li>
+      <li>Effect tile shows the name large and the three secondary readings (brightness stages, speed stages, colour) as a wrapping meta row — long names like "Dream Rainbow" still fit at 480.</li>
+      <li>Sleep tile dims on cable and prints "wireless only" instead of a value.</li>
+      <li>Doors carry a one-line teaser each ("3 layers · 84 keys", "512 B budget"). Macro usage is not shown as a number because Stage 1 has not read it — the budget is the only certain fact.</li>
+    </ul>
+    <h3>Navigation</h3>
+    <ul><li>The three doors. At 900 px the grid goes to four columns and the doors stack on the right as a list.</li>
+      <li><strong>Cost of this structure:</strong> B fills 900 × 640 least well. Tiles are top-anchored and the lower third stays empty; stretching them to fill produced hollow boxes, so they are left at natural height. If the wide window matters, B is the weakest of the four.</li></ul>
+    <h3>Try</h3>
+    <ul><li>Click the connection pill (starts wired to show the unknown-battery state), the stage blocks, the effect name, the swatch.</li></ul>
+    <h3>Default state here</h3>
+    <ul><li>Mixed: <strong>wired, battery unknown</strong>, Windmill, brightness 1, speed 0, single colour #ffffff — the state the board is in when plugged in.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="c">
+  <div class="stage"><div class="frame" id="frame-c"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>C — Keyboard first</h2>
+    <p class="idea">The 84-key silhouette is the readout: keys are cut out of the plate and the layer behind them <em>is</em> the current effect — colour, brightness stage (as opacity, four levels), speed stage (as animation period) and Colour Mixing all render on the board. A chip strip under it carries the exact values; a segmented control switches what the board represents in later areas.</p>
+    <h3>Structure</h3>
+    <ul>
+      <li>Board on top (keeps its 16 × 6 unit proportions at both widths), effect name and firmware in a caption line. At 900 px the board is capped at 250 px tall and centred; caption + chips go left, area control + detail list go right.</li>
+      <li>Status strip: one chip per fact. Facts that need the reader's attention (battery unknown on cable, charging) get an accent border rather than muted text.</li>
+      <li>Segmented control: Device · Lighting · Keys · Macros. In Keys the same board becomes the remap surface; in Lighting, the colour surface.</li>
+      <li>Detail list below with the sentence forms ("Not reported on a cable connection", "Wireless only — not in effect on cable").</li>
+    </ul>
+    <h3>Motion, and why</h3>
+    <ul>
+      <li>Only animated effects animate (Windmill spins, Wave / Sine Wave / Waterfall / Dream Rainbow slide, Stars twinkle, Blooming pulses). Static effects are static. Off is dark. Honours <code>prefers-reduced-motion</code>.</li>
+      <li>Speed stage 0 → 12 s period, stage 4 → 2 s. Brightness stage 1–4 → 35 / 55 / 80 / 100 % glow.</li>
+    </ul>
+    <h3>Try</h3>
+    <ul><li>Click the effect chip and pick Windmill, Wave, Stars, Off. Click brightness/speed chips to watch the board respond. Click the colour chip for Colour Mixing. Click the battery chip (starts 23 % charging).</li></ul>
+    <h3>Default state here</h3>
+    <ul><li>Mixed: 2.4G at <strong>23 % charging</strong>, effect <strong>Dream Rainbow</strong> (a long name that also overrides single colour), brightness 3, speed 2, sleep 1 min.</li></ul>
+  </aside>
+</section>
+
+<section class="opt" data-opt="d">
+  <div class="stage"><div class="frame" id="frame-d"></div><div class="ruler" data-ruler></div></div>
+  <aside class="notes">
+    <h2>D — Status rail + panel</h2>
+    <p class="idea">The left rail is not a menu with a status stuck on it — it is a persistent <em>glance strip</em> (link, battery, effect swatch) that stays visible in every area, with the four area buttons under it. The panel is the full Device sheet. The point: when you are three layers deep in Key Remapping, the battery is still in the corner.</p>
+    <h3>Structure</h3>
+    <ul>
+      <li>Rail at 60 px: three glance glyphs with tiny values, then four icon buttons. At 900 px the rail widens to 200 px and the glyphs grow their labels — no second layout, the same elements gain text.</li>
+      <li>Panel: identity, a Connection statement (big sentence + note block), then Lighting as two-column spec rows, then Sleep. Notes use an accent left border when the reader must know something (battery not reported), a neutral one for plain context.</li>
+      <li>On cable the Sleep section is removed and its absence is explained in the Connection note — hiding with a reason.</li>
+    </ul>
+    <h3>Navigation</h3>
+    <ul><li>Rail buttons. This is the conventional desktop shape; it is kept distinct from the vendor's by having no hero image and no empty top: the panel is dense from the first line.</li></ul>
+    <h3>Try</h3>
+    <ul><li>Click the rail glyphs (link, battery, swatch) as well as the panel values. Widen to 900 px to see the rail labels appear.</li></ul>
+    <h3>Default state here</h3>
+    <ul><li>Mixed: 2.4G at 61 %, effect Blooming in <strong>Colour Mixing</strong> mode (no single hex to show), brightness 4, speed 4, sleep 20 min.</li></ul>
+  </aside>
+</section>
+
+</main>
+
+<section class="tokens">
+  <h2>Tokens, measured</h2>
+  <p class="sub" style="color:var(--page-text-2);max-width:72ch">Contrast ratios computed at load from the live CSS custom properties for the current theme. Body text and muted text must clear 4.5 : 1 on every surface they are placed on. <code>--text-3</code> is the most muted colour used for running text and is only ever placed on <code>--bg</code>, <code>--surface</code> and <code>--s2</code>.</p>
+  <table id="tokenTable"></table>
+</section>
+
+<script>
+(() => {
+const EFFECTS = ['Off','Custom','Always On','Dream Rainbow','One Touch','Key Ripple','Stars','Wave','Shadow','Sine Wave','Windmill','Waterfall','Blooming'];
+const FX_CLASS = {'Off':'fx-off','Dream Rainbow':'fx-rainbow','Stars':'fx-stars','Wave':'fx-wave','Sine Wave':'fx-sine','Windmill':'fx-windmill','Waterfall':'fx-waterfall','Blooming':'fx-bloom'};
+const BATT = [
+  {pct:100, charging:false, full:true},
+  {pct:23,  charging:true,  full:false},
+  {pct:61,  charging:false, full:false},
+  {pct:8,   charging:false, full:false},
+];
+const SLEEPS = [0.5, 1, 5, 20];
+
+const base = () => ({
+  device:'GravaStar Mercury K1 PRO', fw:'0x1707',
+  connection:'2.4g', battIdx:0,
+  effect:'Windmill', brightness:1, speed:0, color:'#ffffff', colorMode:'single',
+  sleep:1,
+});
+const states = {
+  a: base(),
+  b: Object.assign(base(), {connection:'wired'}),
+  c: Object.assign(base(), {battIdx:1, effect:'Dream Rainbow', brightness:3, speed:2}),
+  d: Object.assign(base(), {battIdx:2, effect:'Blooming', colorMode:'mixing', brightness:4, speed:4, sleep:20}),
+};
+
+/* ----- derived view ----- */
+const view = s => {
+  const wired = s.connection === 'wired';
+  const b = wired ? null : BATT[s.battIdx];
+  return {
+    ...s, wired, batt:b,
+    connLabel: wired ? 'Wired' : '2.4G',
+    battLine: b ? (b.full ? 'Full · not charging' : b.charging ? 'Charging' : b.pct <= 15 ? 'Low · not charging' : 'Not charging') : null,
+    sleepLabel: s.sleep < 1 ? '30 s' : `${s.sleep} min`,
+    mixing: s.colorMode === 'mixing',
+    animated: !!FX_CLASS[s.effect] && s.effect !== 'Off',
+  };
+};
+
+/* ----- icons ----- */
+const I = {
+  device:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="2"/><path d="M7 11h.01M11 11h.01M15 11h.01M7 14h10"/></svg>',
+  light:'<svg viewBox="0 0 24 24"><path d="M12 3v2M4.9 6.9l1.4 1.4M3 13h2M19 13h2M17.7 8.3l1.4-1.4"/><path d="M8 17a5 5 0 1 1 8 0v2H8z"/><path d="M10 21h4"/></svg>',
+  keys:'<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h2M11 10h2M15 10h2M7 14h10"/></svg>',
+  macro:'<svg viewBox="0 0 24 24"><path d="M5 7h14M5 12h9M5 17h11"/><circle cx="19" cy="17" r="2"/></svg>',
+  plug:'<svg viewBox="0 0 24 24"><path d="M9 3v5M15 3v5M7 8h10v3a5 5 0 0 1-10 0z"/><path d="M12 16v5"/></svg>',
+  radio:'<svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="1.5"/><path d="M8.5 9.5a5 5 0 0 0 0 7M15.5 9.5a5 5 0 0 1 0 7M5.6 6.6a9 9 0 0 0 0 12.8M18.4 6.6a9 9 0 0 1 0 12.8"/></svg>',
+  arrow:'<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  moon:'<svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>',
+  fx:'<svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>',
+};
+
+/* ----- primitives ----- */
+const battSvg = (b, w = 34) => {
+  const h = Math.round(w * 16 / 34);
+  if (!b) return `<svg class="batt unknown" viewBox="0 0 34 16" width="${w}" height="${h}" role="img" aria-label="Battery not reported">
+    <rect class="case" x=".75" y=".75" width="28.5" height="14.5" rx="3"/><rect class="nub" x="31" y="5" width="3" height="6" rx="1"/>
+    <path class="plug" d="M12 4v3M18 4v3M10.5 7h9v2a4.5 4.5 0 0 1-9 0z"/></svg>`;
+  const fill = Math.max(1, Math.round(25 * b.pct / 100));
+  const cls = ['batt', b.charging ? 'charging' : '', b.pct <= 15 ? 'low' : ''].join(' ');
+  return `<svg class="${cls}" viewBox="0 0 34 16" width="${w}" height="${h}" role="img" aria-label="Battery ${b.pct} percent${b.charging ? ', charging' : ''}">
+    <rect class="case" x=".75" y=".75" width="28.5" height="14.5" rx="3"/><rect class="nub" x="31" y="5" width="3" height="6" rx="1"/>
+    <rect class="fill" x="2.75" y="2.75" width="${fill}" height="10.5" rx="1.5"/>
+    ${b.charging ? '<path class="bolt" d="M16.5 2.5 11.5 9h3.5l-1 4.5 5-6.5h-3.5z"/>' : ''}</svg>`;
+};
+const steps = (val, min, max, size = '') => {
+  let cells = '';
+  for (let i = min; i <= max; i++) cells += `<i class="${i <= val ? 'on' : ''}"></i>`;
+  return `<span class="steps ${size}" role="img" aria-label="stage ${val} of ${min}–${max}">${cells}<b>${val}</b></span>`;
+};
+const swatch = v => v.mixing ? `<span class="swatch mix"></span>` : `<span class="swatch" style="background:${v.color}"></span>`;
+const colourText = v => v.mixing ? `Colour Mixing <span style="color:var(--text-2);font-weight:400">— no single colour</span>` : `<span class="mono">${v.color}</span>`;
+const btn = (act, inner, cls = '', label = '') => `<button type="button" class="act ${cls}" data-act="${act}" aria-label="${label || 'Preview: change ' + act}">${inner}</button>`;
+
+/* ----- Option A ----- */
+const renderA = v => `
+<div class="app A">
+  <header class="A-top">
+    <div><span class="lbl">Device</span><strong>${v.device.replace('GravaStar ', '')}</strong><span class="fw">GravaStar · firmware <span class="mono">${v.fw}</span></span></div>
+    ${btn('conn', `<span class="A-link" role="img" aria-label="Connected over ${v.connLabel}">
+      <span class="${v.wired ? 'on' : ''}">Wired</span><span class="${v.wired ? '' : 'on'}">2.4G</span><span title="Bluetooth: not on this firmware">BT</span></span>`, '', 'Preview: toggle connection')}
+  </header>
+  <div class="A-body">
+    ${btn('batt', v.batt
+      ? `${battSvg(v.batt, 54)}<div><div class="big">${v.batt.pct}<span style="font-size:.5em;font-weight:500;margin-left:2px">%</span></div><div class="sub">${v.battLine}</div></div>`
+      : `${battSvg(null, 54)}<div class="unk">Battery not reported on cable<small>The keyboard only reports charge over 2.4G. Unplug to read it.</small></div>`,
+      'A-power', 'Preview: cycle battery')}
+    <section class="A-group">
+      <h2 class="lbl">Lighting</h2>
+      ${btn('effect', `<span class="k">Effect</span><span class="v val">${v.effect}</span>`, 'A-row')}
+      ${btn('bright', `<span class="k">Brightness</span><span class="v">${steps(v.brightness, 1, 4)}<span style="color:var(--text-2)">of 4</span></span>`, 'A-row')}
+      ${btn('speed', `<span class="k">Speed</span><span class="v">${steps(v.speed, 0, 4)}<span style="color:var(--text-2)">of 0–4</span></span>`, 'A-row')}
+      ${btn('color', `<span class="k">Colour</span><span class="v">${swatch(v)}<span class="val">${colourText(v)}</span></span>`, 'A-row')}
+    </section>
+    <section class="A-group">
+      <h2 class="lbl">Power</h2>
+      ${btn('sleep', v.wired
+        ? `<span class="k">Sleep timer</span><span class="v">Wireless only — not in effect on cable</span>`
+        : `<span class="k">Sleep timer</span><span class="v val">${v.sleepLabel}<span style="color:var(--text-2);font-weight:400">idle → sleep</span></span>`,
+        'A-row' + (v.wired ? ' off' : ''))}
+    </section>
+  </div>
+  <nav class="A-nav" aria-label="Areas">
+    <button aria-current="page">${I.device}Device</button><button>${I.light}Lighting</button><button>${I.keys}Keys</button><button>${I.macro}Macros</button>
+  </nav>
+</div>`;
+
+/* ----- Option B ----- */
+const renderB = v => `
+<div class="app B">
+  <header class="B-id">
+    <div><strong>${v.device.replace('GravaStar ', '')}</strong><span class="fw">GravaStar</span></div>
+    ${btn('conn', `<span class="B-conn">${v.wired ? I.plug : `<span class="dot"></span>`}${v.connLabel}</span>`, '', 'Preview: toggle connection')}
+  </header>
+  <div class="B-grid">
+    ${btn('batt', v.batt
+      ? `${battSvg(v.batt, 60)}<div><span class="lbl">Battery</span><div class="num">${v.batt.pct}<span style="font-size:.45em;font-weight:500">%</span></div><div class="sub">${v.battLine}</div></div>`
+      : `${battSvg(null, 60)}<div><span class="lbl">Battery</span><div class="unk">Not reported on cable<small>Charge is only read over 2.4G.</small></div></div>`,
+      'tile tile-power span2', 'Preview: cycle battery')}
+    <div class="tile tile-effect span2">
+      <span class="lbl">Lighting</span>
+      ${btn('effect', `<span class="name">${v.effect}</span>`, '', 'Preview: choose effect')}
+      <div class="meta">
+        ${btn('bright', `<span class="k">Bright</span>${steps(v.brightness, 1, 4, 'sm')}`)}
+        ${btn('speed', `<span class="k">Speed</span>${steps(v.speed, 0, 4, 'sm')}`)}
+        ${btn('color', `${swatch(v)}<span class="val" style="font-weight:500">${v.mixing ? 'Colour Mixing' : `<span class="mono">${v.color}</span>`}</span>`)}
+      </div>
+    </div>
+    ${btn('sleep', v.wired
+      ? `<span class="lbl">Sleep timer</span><div class="big val">—</div><div class="sub">Wireless only</div>`
+      : `<span class="lbl">Sleep timer</span><div class="big">${v.sleepLabel}</div><div class="sub">idle before sleep</div>`,
+      'tile' + (v.wired ? ' dim' : ''))}
+    <div class="tile"><span class="lbl">Firmware</span><div class="big mono">${v.fw}</div><div class="sub">read at connect</div></div>
+    <div class="B-doors">
+      <button type="button" class="door"><span class="t">Lighting ${I.arrow}</span><span class="d">${v.effect} · bright ${v.brightness}</span></button>
+      <button type="button" class="door"><span class="t">Keys ${I.arrow}</span><span class="d">3 layers · 84 keys</span></button>
+      <button type="button" class="door"><span class="t">Macros ${I.arrow}</span><span class="d">512 B budget</span></button>
+    </div>
+  </div>
+</div>`;
+
+/* ----- Option C ----- */
+const U = 40, GAP = 5, PAD = 12;
+const ROWS = [
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+  [1,1,1,1,1,1,1,1,1,1,1,1,1,2,1],
+  [1.5,1,1,1,1,1,1,1,1,1,1,1,1,1.5,1],
+  [1.75,1,1,1,1,1,1,1,1,1,1,1,2.25,1],
+  [2.25,1,1,1,1,1,1,1,1,1,1,1.75,1,1],
+  [1.25,1.25,1.25,6.25,1,1,1,1,1,1],
+];
+const keyboardSvg = (() => {
+  let rects = '';
+  ROWS.forEach((row, r) => {
+    let x = PAD;
+    row.forEach(w => {
+      rects += `<rect x="${x + GAP / 2}" y="${PAD + r * U + GAP / 2}" width="${w * U - GAP}" height="${U - GAP}" rx="4"/>`;
+      x += w * U;
+    });
+  });
+  const W = PAD * 2 + 16 * U, H = PAD * 2 + 6 * U;
+  return `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true">
+    <defs><mask id="c-holes"><rect width="${W}" height="${H}" fill="#fff"/><g fill="#000">${rects}</g></mask></defs>
+    <rect class="plate" width="${W}" height="${H}" rx="10" mask="url(#c-holes)"/></svg>`;
+})();
+const chip = (act, inner, attn = false, label = '') => btn(act, `<span class="chip${attn ? ' attn' : ''}">${inner}</span>`, '', label);
+const renderC = v => {
+  const fx = FX_CLASS[v.effect] || 'fx-solid';
+  const lvl = [0, .35, .55, .8, 1][v.brightness];
+  const dur = [12, 8, 5, 3, 2][v.speed];
+  return `
+<div class="app C">
+  <div class="C-left">
+  <div class="C-kb ${fx}${v.mixing ? ' mix' : ''}" style="--c:${v.color};--lvl:${lvl};--dur:${dur}s" role="img" aria-label="Keyboard showing effect ${v.effect}">
+    <div class="C-glow"></div>${keyboardSvg}
+  </div>
+  <div class="C-caption">${btn('effect', `<span class="name">${v.effect}</span>`, '', 'Preview: choose effect')}<span class="fw">${v.device.replace('GravaStar ', '')} · fw <span class="mono">${v.fw}</span></span></div>
+  <div class="C-strip">
+    ${chip('conn', `${v.wired ? I.plug : I.radio}${v.connLabel}`, false, 'Preview: toggle connection')}
+    ${v.batt
+      ? chip('batt', `${battSvg(v.batt, 26)}${v.batt.pct}% <span class="k">${v.battLine.toLowerCase()}</span>`, v.batt.charging || v.batt.pct <= 15, 'Preview: cycle battery')
+      : chip('batt', `${battSvg(null, 26)}Battery n/a on cable`, true, 'Preview: cycle battery')}
+    ${chip('bright', `<span class="k">Bright</span>${steps(v.brightness, 1, 4, 'sm')}`)}
+    ${chip('speed', `<span class="k">Speed</span>${steps(v.speed, 0, 4, 'sm')}`)}
+    ${chip('color', `${swatch(v)}${v.mixing ? 'Colour Mixing' : `<span class="mono">${v.color}</span>`}`)}
+    ${v.wired ? '' : chip('sleep', `${I.moon}<span class="k">Sleep</span>${v.sleepLabel}`)}
+  </div>
+  </div>
+  <div class="C-right">
+  <nav class="C-seg" aria-label="Areas"><button aria-current="page">Device</button><button>Lighting</button><button>Keys</button><button>Macros</button></nav>
+  <div class="C-detail">
+    <dl>
+      <dt>Device</dt><dd>${v.device}</dd>
+      <dt>Firmware</dt><dd class="mono">${v.fw}</dd>
+      <dt>Link</dt><dd>${v.wired ? 'USB cable' : '2.4G dongle'}</dd>
+      <dt>Battery</dt><dd class="${v.batt ? '' : 'info'}">${v.batt ? `${v.batt.pct} % — ${v.battLine.toLowerCase()}` : 'Not reported on a cable connection'}</dd>
+      <dt>Effect</dt><dd>${v.effect}${v.animated ? ' <span style="color:var(--text-2);font-weight:400">animated</span>' : ''}</dd>
+      <dt>Colour</dt><dd>${v.mixing ? 'Colour Mixing — per-key colours' : `<span class="mono">${v.color}</span>`}</dd>
+      ${v.wired ? '' : `<dt>Sleep</dt><dd>${v.sleepLabel} idle → sleep</dd>`}
+    </dl>
+  </div>
+  ${v.wired ? `<div class="C-foot">Sleep timer is wireless-only and not shown on cable.</div>` : ''}
+  </div>
+</div>`;
+};
+
+/* ----- Option D ----- */
+const renderD = v => `
+<div class="app D">
+  <aside class="D-rail">
+    <div class="D-glance">
+      ${btn('conn', `<svg class="ic" viewBox="0 0 24 24">${(v.wired ? I.plug : I.radio).replace(/<\/?svg[^>]*>/g, '')}</svg><span class="n">${v.connLabel}</span><span class="t">${v.connLabel}</span>`, '', 'Preview: toggle connection')}
+      ${btn('batt', v.batt
+        ? `${battSvg(v.batt, 26)}<span class="n">${v.batt.pct}%</span><span class="t">${v.batt.pct} % · ${v.battLine.toLowerCase()}</span>`
+        : `${battSvg(null, 26)}<span class="n">n/a</span><span class="t">Battery n/a on cable</span>`, '', 'Preview: cycle battery')}
+      ${btn('effect', `${swatch(v)}<span class="n">${v.effect.split(' ')[0]}</span><span class="t">${v.effect}</span>`, '', 'Preview: choose effect')}
+    </div>
+    <nav class="D-nav" aria-label="Areas">
+      <button aria-current="page">${I.device}Device</button><button>${I.light}Lighting</button><button>${I.keys}Keys</button><button>${I.macro}Macros</button>
+    </nav>
+  </aside>
+  <main class="D-panel">
+    <header><strong>${v.device}</strong><span class="fw">Firmware <span class="mono">${v.fw}</span> · read at connect</span></header>
+    <section class="D-sec">
+      <h2 class="lbl">Connection</h2>
+      ${btn('conn', `<div class="D-stmt">${v.wired ? 'On cable' : '2.4G wireless'}${v.batt ? `<span>· ${v.batt.pct} %</span>` : ''}<span class="sub">${v.batt ? v.battLine : 'USB data + charge'}</span></div>`, '', 'Preview: toggle connection')}
+      ${v.wired
+        ? `<div class="D-note">Battery is not reported over cable. The sleep timer is wireless-only, so it is not listed below.</div>`
+        : (v.batt.charging ? `<div class="D-note">Charging over the dongle link — the reading updates each poll.</div>` : `<div class="D-note muted">Battery read once at connect; refresh re-sends the poll.</div>`)}
+    </section>
+    <section class="D-sec">
+      <h2 class="lbl">Lighting</h2>
+      <div class="D-rows">
+        ${btn('effect', `<span class="k">Effect</span><span class="v">${v.effect}</span>`, 'D-row')}
+        ${btn('color', `<span class="k">Colour</span><span class="v">${swatch(v)}<span>${v.mixing ? 'Colour Mixing' : `<span class="mono">${v.color}</span>`}</span></span>`, 'D-row')}
+        ${btn('bright', `<span class="k">Brightness</span><span class="v">${steps(v.brightness, 1, 4)}</span>`, 'D-row')}
+        ${btn('speed', `<span class="k">Speed</span><span class="v">${steps(v.speed, 0, 4)}</span>`, 'D-row')}
+      </div>
+      ${v.mixing ? `<div class="D-note muted">Colour Mixing: each key carries its own colour, so no single hex applies.</div>` : ''}
+    </section>
+    ${v.wired ? '' : `<section class="D-sec">
+      <h2 class="lbl">Sleep</h2>
+      ${btn('sleep', `<div class="D-stmt">${v.sleepLabel}<span class="sub">idle before the keyboard sleeps · 0.5–20 min</span></div>`, '', 'Preview: cycle sleep')}
+    </section>`}
+  </main>
+</div>`;
+
+/* ----- wiring ----- */
+const renderers = {a:renderA, b:renderB, c:renderC, d:renderD};
+const frames = {};
+for (const k of Object.keys(renderers)) frames[k] = document.getElementById('frame-' + k);
+
+const render = k => { frames[k].innerHTML = renderers[k](view(states[k])); };
+const act = (k, name) => {
+  const s = states[k];
+  switch (name) {
+    case 'conn': s.connection = s.connection === 'wired' ? '2.4g' : 'wired'; break;
+    case 'batt': if (s.connection !== 'wired') s.battIdx = (s.battIdx + 1) % BATT.length; break;
+    case 'bright': s.brightness = s.brightness % 4 + 1; break;
+    case 'speed': s.speed = (s.speed + 1) % 5; break;
+    case 'color': s.colorMode = s.colorMode === 'single' ? 'mixing' : 'single'; break;
+    case 'sleep': if (s.connection !== 'wired') s.sleep = SLEEPS[(SLEEPS.indexOf(s.sleep) + 1) % SLEEPS.length]; break;
+    case 'effect': openPicker(k); return;
+  }
+  render(k);
+};
+const openPicker = k => {
+  const s = states[k];
+  const el = document.createElement('div');
+  el.className = 'picker';
+  el.innerHTML = `<div class="sheet" role="dialog" aria-label="Preview: choose effect"><header><strong>Effect</strong><span>preview only — 13 names from the firmware</span></header>
+    <ul>${EFFECTS.map(e => `<li><button type="button" data-fx="${e}" aria-current="${e === s.effect}">${e}</button></li>`).join('')}</ul></div>`;
+  el.addEventListener('click', e => {
+    const b = e.target.closest('[data-fx]');
+    if (b) { s.effect = b.dataset.fx; el.remove(); render(k); return; }
+    if (e.target === el) el.remove();
+  });
+  frames[k].appendChild(el);
+  el.querySelector('[aria-current="true"]').focus();
+};
+for (const k of Object.keys(frames)) {
+  render(k);
+  frames[k].addEventListener('click', e => {
+    const b = e.target.closest('[data-act]');
+    if (b && frames[k].contains(b)) act(k, b.dataset.act);
+  });
+}
+
+/* option tabs */
+const tabs = document.getElementById('optTabs');
+tabs.addEventListener('click', e => {
+  const b = e.target.closest('[data-opt]'); if (!b) return;
+  tabs.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  document.querySelectorAll('.opt').forEach(o => o.toggleAttribute('data-active', o.dataset.opt === b.dataset.opt));
+});
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input,textarea')) return;
+  const i = ['1','2','3','4'].indexOf(e.key);
+  if (i >= 0) tabs.querySelectorAll('button')[i].click();
+});
+
+/* width */
+const widthSeg = document.getElementById('widthSeg');
+const rulers = document.querySelectorAll('[data-ruler]');
+const setWidth = w => {
+  document.documentElement.style.setProperty('--frame-w', w + 'px');
+  widthSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x.dataset.w === String(w)));
+  rulers.forEach(r => r.textContent = `${w} × 640 px window`);
+};
+widthSeg.addEventListener('click', e => { const b = e.target.closest('[data-w]'); if (b) setWidth(+b.dataset.w); });
+setWidth(480);
+
+/* theme + measured contrast */
+const themeSeg = document.getElementById('themeSeg');
+const lum = hex => {
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4);
+  return .2126 * r + .7152 * g + .0722 * b;
+};
+const ratio = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
+const PAIRS = [
+  ['--text', '--bg', 'body text on window'], ['--text', '--surface', 'body text on surface'], ['--text', '--s3', 'body text on raised surface'],
+  ['--text-2', '--bg', 'secondary text on window'], ['--text-2', '--surface', 'secondary text on surface'], ['--text-2', '--s2', 'secondary text on tile'], ['--text-2', '--s3', 'secondary text on raised surface'],
+  ['--text-3', '--bg', 'muted / label text on window'], ['--text-3', '--surface', 'muted / label text on surface'], ['--text-3', '--s2', 'muted / label text on tile'],
+  ['--accent', '--surface', 'accent as text on surface'], ['--accent-ink', '--accent', 'ink on accent (active tab, picker)'],
+  ['--ok', '--surface', 'ok green as text'], ['--bad', '--surface', 'bad red as text'],
+];
+const renderTokens = () => {
+  const cs = getComputedStyle(document.documentElement);
+  const val = n => cs.getPropertyValue(n).trim();
+  const rows = PAIRS.map(([f, b, why]) => {
+    const r = ratio(val(f), val(b));
+    return `<tr><td><span class="sw" style="background:${val(f)}"></span><code>${f}</code> ${val(f)}</td><td><span class="sw" style="background:${val(b)}"></span><code>${b}</code> ${val(b)}</td><td>${why}</td><td class="${r >= 4.5 ? 'pass' : 'fail'}">${r.toFixed(2)} : 1${r >= 4.5 ? '' : ' — below 4.5'}</td></tr>`;
+  }).join('');
+  document.getElementById('tokenTable').innerHTML = `<thead><tr><th>Foreground</th><th>Background</th><th>Used for</th><th>Ratio</th></tr></thead><tbody>${rows}</tbody>`;
+};
+themeSeg.addEventListener('click', e => {
+  const b = e.target.closest('[data-theme]'); if (!b) return;
+  document.documentElement.dataset.theme = b.dataset.theme;
+  themeSeg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
+  renderTokens();
+});
+renderTokens();
+})();
+</script>
+</body>
+</html>
