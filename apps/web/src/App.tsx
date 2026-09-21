@@ -39,7 +39,7 @@ export default function App() {
     <div className="app" style={style}>
       <div className="titlebar" />
       <Field lighting={lighting} effectColour={effectColour} />
-      <Rail keyboard={keyboard} route={route} />
+      <Rail keyboard={keyboard} busy={keyboard.busy} route={route} />
       <main className="panel">{page(route, keyboard, settings)}</main>
     </div>
   )

@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import type { Capabilities, LightingState, RGB } from 'k916'
+import type { Capabilities, LightingState, RGB, SleepTimer } from 'k916'
 import { expect, test } from 'vitest'
 import type { Keyboard } from '../types/keyboard'
 import DevicePage from './DevicePage'
@@ -10,7 +10,20 @@ const K1_PRO: Capabilities = {
   effectIds: [0, 277, 1, 3, 4, 7, 8, 11, 12, 13, 15, 16, 17],
 }
 
+const NO_ACTIONS = {
+  busy: false,
+  connect: async () => {},
+  refresh: async () => {},
+  setLighting: async () => {},
+  setEffectColour: async () => {},
+  setKeyColour: async () => undefined,
+  setSleepTimer: async () => {},
+  backup: async () => undefined,
+  restore: async () => {},
+}
+
 const onCable: Keyboard = {
+  ...NO_ACTIONS,
   status: 'connected',
   info: { uuid: '0x030000000197', productName: 'GravaStar Mercury K1 PRO', firmwareVersion: '0x1707', connection: 'wired' },
   capabilities: K1_PRO,
@@ -18,9 +31,8 @@ const onCable: Keyboard = {
   power: null,
   lighting: { effectId: 17, effect: 'Blooming', colourMode: 'mixed', brightness: 2, speed: 1, mixing: true },
   effectColour: { r: 0, g: 255, b: 0 },
+  sleepTimer: null,
   notice: null,
-  connect: async () => {},
-  refresh: async () => {},
 }
 
 test('on cable the battery sentence is full weight, sleep is absent and the mixed colour is explained', () => {
@@ -59,8 +71,20 @@ test('Custom is per-key and has no colour slot to show', () => {
   expect(screen.getByText('Per-key RGB — set per key in Lighting')).toBeTruthy()
 })
 
+const onDongle = (sleepTimer: SleepTimer): Keyboard => ({ ...onCable, info: { ...onCable.info, connection: 'wireless' }, reportsBattery: true, power: { percent: 100, charging: false, full: true }, sleepTimer })
+
+test('over the dongle the sleep card shows the timer the keyboard reports', () => {
+  render(<DevicePage keyboard={onDongle({ enabled: true, minutes: 9.5 })} />)
+  expect(screen.getByText('Sleep after 9.5 min')).toBeTruthy()
+})
+
+test('a disabled timer says so rather than showing zero', () => {
+  render(<DevicePage keyboard={onDongle({ enabled: false, minutes: 0 })} />)
+  expect(screen.getByText('Sleep timer off')).toBeTruthy()
+})
+
 test('disconnected, the page is the connect panel with the reason', () => {
-  render(<DevicePage keyboard={{ status: 'idle', notice: 'Dongle was disconnected.', connect: async () => {}, refresh: async () => {} }} />)
+  render(<DevicePage keyboard={{ ...NO_ACTIONS, status: 'idle', notice: 'Dongle was disconnected.' }} />)
 
   expect(screen.getByRole('status').textContent).toBe('Dongle was disconnected.')
   expect(screen.getByRole('button', { name: 'Connect keyboard' })).toBeTruthy()

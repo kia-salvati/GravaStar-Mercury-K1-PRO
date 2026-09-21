@@ -12,7 +12,10 @@ const FIXTURES = resolve(__dirname, '../../../../packages/protocol/test/fixtures
 const DONGLE_CAPTURE = readFileSync(resolve(FIXTURES, 'session-1-connect.jsonl'), 'utf8')
 const CABLE_CAPTURE = readFileSync(resolve(FIXTURES, 'session-4-wired.jsonl'), 'utf8')
 const COLOUR_CAPTURE = readFileSync(resolve(FIXTURES, 'session-6-colour.jsonl'), 'utf8')
+const DONGLE_CUSTOM_CAPTURE = readFileSync(resolve(FIXTURES, 'session-7-dongle-colour.jsonl'), 'utf8')
 const DONGLE = { vendorId: 0x3554, productId: 0xfa09 }
+// A refresh re-runs every exchange, so the session is replayed twice for tests that refresh.
+const DONGLE_CAPTURE_TWICE = [DONGLE_CAPTURE, DONGLE_CAPTURE].join('\n')
 
 /** A source that remembers one transport, so the hook takes its reconnect-on-load path. */
 const sourceOf = (transport: Transport | null) => {
@@ -33,7 +36,8 @@ const sourceOf = (transport: Transport | null) => {
 
 const connected = async (source: DeviceSource) => {
   const rendered = renderHook(() => useKeyboard(source))
-  await waitFor(() => expect(rendered.result.current.status).toBe('connected'))
+  // Captures replay the dongle's recorded packet loss, so a connect can take a few retries.
+  await waitFor(() => expect(rendered.result.current.status).toBe('connected'), { timeout: 5000 })
   return { ...rendered, state: rendered.result.current as Connected }
 }
 
@@ -45,6 +49,7 @@ test('over the dongle: reconnects on load, reports battery and decodes Windmill'
   expect(state.power).toEqual({ percent: 100, charging: false, full: true })
   expect(state.lighting).toMatchObject({ effect: 'Windmill', colourMode: 'mixed', brightness: 1, speed: 0, mixing: true })
   expect(state.effectColour).toEqual({ r: 255, g: 255, b: 255 })
+  expect(state.sleepTimer).toEqual({ enabled: true, minutes: 1 })
 })
 
 test('over the cable: battery is not reported and the board was on Blooming', async () => {
@@ -55,6 +60,47 @@ test('over the cable: battery is not reported and the board was on Blooming', as
   expect(state.power).toBeNull()
   expect(state.lighting).toMatchObject({ effect: 'Blooming', colourMode: 'mixed', mixing: true })
   expect(state.effectColour).toEqual({ r: 0, g: 255, b: 0 })
+  expect(state.sleepTimer).toBeNull()
+})
+
+test('session 7: Custom has no colour slot, which reads as null rather than a failure', async () => {
+  const { state } = await connected(sourceOf(new MockTransport(DONGLE_CUSTOM_CAPTURE, DONGLE)).source)
+
+  expect(state.lighting).toMatchObject({ effect: 'Custom', colourMode: 'perKey' })
+  expect(state.effectColour).toBeNull()
+  expect(state.notice).toBeNull()
+})
+
+test('busy is true for the whole of a read and false once it has answered', async () => {
+  const { result } = await connected(sourceOf(new MockTransport(DONGLE_CAPTURE_TWICE, DONGLE)).source)
+  expect(result.current.busy).toBe(false)
+
+  let refreshing: Promise<void> = Promise.resolve()
+  act(() => {
+    refreshing = result.current.refresh()
+  })
+  expect(result.current.busy).toBe(true)
+
+  await act(() => refreshing)
+  expect(result.current.busy).toBe(false)
+})
+
+test('a write while a read is in flight is refused as a notice: nothing is sent and nothing fails', async () => {
+  const { result } = await connected(sourceOf(new MockTransport(DONGLE_CAPTURE_TWICE, DONGLE)).source)
+  const before = result.current as Connected
+
+  let refreshing: Promise<void> = Promise.resolve()
+  await act(async () => {
+    refreshing = result.current.refresh()
+    await result.current.setSleepTimer(5)
+  })
+  expect(result.current.notice).toMatch(/Sleep timer change was not sent — the keyboard is still busy/)
+
+  // The capture holds no write frames, so had anything been sent the mock would have thrown
+  // and the notice would be a failure instead; the refresh completing cleanly proves the same.
+  await act(() => refreshing)
+  expect(result.current).toMatchObject({ status: 'connected', lighting: before.lighting, sleepTimer: before.sleepTimer })
+  expect(result.current.notice).toBeNull()
 })
 
 test('session 6: a single-colour effect reads its own stored colour, with the mixing flag as the firmware has it', async () => {

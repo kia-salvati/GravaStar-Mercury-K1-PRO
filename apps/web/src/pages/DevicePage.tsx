@@ -1,4 +1,4 @@
-import type { PowerState } from 'k916'
+import { SLEEP_MINUTES_MAX, SLEEP_MINUTES_MIN, type PowerState } from 'k916'
 import Card from '../components/Card'
 import ConnectPanel from '../components/ConnectPanel'
 import Steps from '../components/Steps'
@@ -7,6 +7,7 @@ import type { Connected, Keyboard } from '../types/keyboard'
 import { colourKind, swatchHex, type ColourKind } from '../utils/colour'
 import { fieldMotion, isAnimated } from '../utils/field'
 import { powerLabel } from '../utils/power'
+import { sleepLabel } from '../utils/sleep'
 
 const COLOUR_NOTE: Record<Exclude<ColourKind, 'single'>, string> = {
   none: 'Lighting is off',
@@ -45,7 +46,7 @@ function ColourValue({ lighting, effectColour }: Pick<Connected, 'lighting' | 'e
 }
 
 function Readout({ keyboard }: { keyboard: Connected & Keyboard }) {
-  const { info, power, reportsBattery, lighting, effectColour, capabilities, notice } = keyboard
+  const { info, power, reportsBattery, lighting, effectColour, sleepTimer, capabilities, notice } = keyboard
   const wireless = info.connection === 'wireless'
   const animated = isAnimated(fieldMotion(lighting.effect, lighting.colourMode))
   return (
@@ -74,9 +75,12 @@ function Readout({ keyboard }: { keyboard: Connected & Keyboard }) {
           <div className="row"><span className="k">Speed</span><span className="v"><Steps label="Speed" value={lighting.speed} min={0} max={capabilities.lighting.speedStages} /></span></div>
         </div>
       </Card>
-      {wireless && (
+      {sleepTimer && (
         <Card title="Sleep">
-          <p className="help">The idle-to-sleep timer is wireless-only, but the protocol package does not decode it from the profile block yet, so there is no value to show.</p>
+          <div className="stmt">
+            {sleepLabel(sleepTimer)}
+            <span className="sub">idle before the keyboard sleeps · {SLEEP_MINUTES_MIN}–{SLEEP_MINUTES_MAX} min · wireless only</span>
+          </div>
         </Card>
       )}
     </>

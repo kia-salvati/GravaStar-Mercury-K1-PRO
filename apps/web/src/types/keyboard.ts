@@ -1,4 +1,4 @@
-import type { Capabilities, DeviceInfo, LightingState, PowerState, RGB } from 'k916'
+import type { Backup, Capabilities, DeviceInfo, LightingChange, LightingState, PowerState, RGB, SleepTimer } from 'k916'
 
 export interface Disconnected {
   /** `unsupported`: this browser has no WebHID. `idle`: waiting for the connect button. */
@@ -17,17 +17,37 @@ export interface Connected {
   lighting: LightingState
   /** The current effect's own colour; null for Custom, which has no slot in the light-colour block. */
   effectColour: RGB | null
-  /** A refresh that failed; the last good reading stays on screen. */
+  /** Idle time before sleep. Null on cable, where the keyboard ignores it. */
+  sleepTimer: SleepTimer | null
+  /** A call that failed or was refused; the last good reading stays on screen. */
   notice: string | null
 }
 
 export type KeyboardState = Disconnected | Connected
 
+interface KeyboardProgress {
+  /** A device call is in flight. Controls that write disable on this; the library refuses them anyway. */
+  busy: boolean
+}
+
+/**
+ * Writes fold the keyboard's read-back into the state. Each resolves to nothing (or to the
+ * read-back where the state has no place for it) when the call was refused or failed; the
+ * reason is in `notice`.
+ */
 interface KeyboardActions {
   /** Opens the browser's device prompt; needs a user gesture. */
   connect(): Promise<void>
-  /** Re-reads lighting and, over the dongle, battery. */
+  /** Re-reads lighting, colour, sleep timer and, over the dongle, battery. */
   refresh(): Promise<void>
+  setLighting(change: LightingChange): Promise<void>
+  /** The current effect's colour. */
+  setEffectColour(rgb: RGB): Promise<void>
+  setKeyColour(slot: number, rgb: RGB): Promise<RGB | undefined>
+  /** Null switches the timer off. */
+  setSleepTimer(minutes: number | null): Promise<void>
+  backup(): Promise<Backup | undefined>
+  restore(backup: Backup): Promise<void>
 }
 
-export type Keyboard = KeyboardState & KeyboardActions
+export type Keyboard = KeyboardState & KeyboardProgress & KeyboardActions

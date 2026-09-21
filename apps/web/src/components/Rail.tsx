@@ -52,9 +52,10 @@ function NavLink({ route, current }: { route: Route; current: Route }) {
   )
 }
 
-export default function Rail({ keyboard, route }: { keyboard: KeyboardState; route: Route }) {
+export default function Rail({ keyboard, busy, route }: { keyboard: KeyboardState; busy: boolean; route: Route }) {
   return (
     <aside className="rail glass">
+      {busy && <span className="working" role="status" aria-label="Talking to the keyboard" />}
       <div className="glance" aria-label="At a glance">
         {glanceOf(keyboard).map((glance) => (
           <div key={glance.key} className="glance-item">

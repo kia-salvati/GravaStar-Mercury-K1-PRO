@@ -38,15 +38,24 @@ function diff(a: Uint8Array, b: Uint8Array): number[] {
   return out
 }
 
+/** Every control that can write. Disabled together while a step runs; the library refuses anyway. */
+const writeControls = () => [...document.querySelectorAll<HTMLButtonElement | HTMLInputElement>('button, input')]
+
 async function step(name: string, run: () => Promise<void>, unlock?: HTMLButtonElement): Promise<void> {
+  const wasEnabled = writeControls().filter((el) => !el.disabled)
+  for (const el of wasEnabled) el.disabled = true
+  document.body.style.cursor = 'progress'
   print(`▶ ${name}`)
   const started = performance.now()
   try {
     await run()
     print(`✓ ${name} (${Math.round(performance.now() - started)} ms)`, 'ok')
-    if (unlock) unlock.disabled = false
+    if (unlock) wasEnabled.push(unlock)
   } catch (error) {
     print(`✗ ${name}: ${error instanceof Error ? error.message : String(error)}`, 'err')
+  } finally {
+    for (const el of wasEnabled) el.disabled = false
+    document.body.style.cursor = ''
   }
 }
 
