@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>k916 write smoke test</title>
+  <style>
+    body { font: 14px/1.5 system-ui, sans-serif; margin: 2rem auto; max-width: 56rem; padding: 0 1rem; color: #1a1a1a; background: #fafafa }
+    h1 { font-size: 1.25rem }
+    h2 { font-size: 1rem; margin-top: 2rem }
+    #ladder button { min-width: 2.6rem; margin: .15rem }
+    #ladder button.active { outline: 3px solid #2f6feb; outline-offset: 1px }
+    #swatches button { width: 2.2rem; height: 2.2rem; margin: .15rem; border: 1px solid #888; border-radius: 4px }
+    input { font: inherit; padding: .4rem .5rem }
+    ol { padding-left: 1.25rem }
+    li { margin: .75rem 0 }
+    button { font: inherit; padding: .45rem .9rem; margin-right: .5rem; cursor: pointer }
+    button:disabled { opacity: .45; cursor: not-allowed }
+    .warn { color: #8a2b06; font-weight: 600 }
+    pre { background: #111; color: #e8e8e8; padding: 1rem; overflow-x: auto; white-space: pre-wrap; min-height: 8rem; border-radius: 6px }
+    .ok { color: #7ee787 } .err { color: #ff7b72 } .dim { color: #8b949e }
+  </style>
+</head>
+<body>
+  <h1>k916 write smoke test — Stage 2, step by step</h1>
+  <p>Dev-only page. Each step is one button; the next stays disabled until the previous one passed. Nothing is written before a backup exists on disk.</p>
+  <ol>
+    <li><button id="connect">1 · Connect</button> <span class="dim">picks the keyboard — cable or 2.4G, both write paths are capture-verified</span></li>
+    <li><button id="backup" disabled>2 · Read &amp; back up profile</button> <span class="dim">saves the 128 bytes to localStorage and downloads <code>k1-profile-backup.json</code></span></li>
+    <li><button id="writeback" disabled>3 · Write profile back unchanged</button> <span class="dim">proves the write path and acks with zero change to the board</span></li>
+    <li><button id="bright2" disabled>4 · Brightness → 2</button> <span class="dim">a value their app has sent; watch the LEDs</span></li>
+    <li><button id="bright10" disabled>5 · Brightness → 4</button> <span class="dim">the top stage</span></li>
+    <li><button id="restore" disabled>6 · Restore backup</button> <span class="dim">writes the step-2 bytes back and verifies</span></li>
+  </ol>
+
+  <h2>Brightness ladder <span class="dim" style="font-weight:normal">— enabled after step 2; every declared stage, one write each, read back and reported</span></h2>
+  <p>
+    <button id="down" disabled>◀ one step down</button>
+    <button id="up" disabled>one step up ▶</button>
+    <span id="current" class="dim">current level: —</span>
+  </p>
+  <p id="ladder"></p>
+  <p class="dim">Hardware-tested 2026-09-21: 5–12 looked identical to 4, and 20 reset the keyboard. The ladder stops at the model’s declared stages.</p>
+
+  <h2>Effect colour <span class="dim" style="font-weight:normal">— enabled after step 2; writes the current effect’s RGB in the light-colour block (cable-verified)</span></h2>
+  <p class="dim">Only visible on single-colour effects with Color Mixing off. Pick <em>Always On</em> in step 7 first if the board is on a mixed effect.</p>
+  <p>
+    <button id="effectAlwaysOn" disabled>7 · Effect → Always On, mixing off</button>
+    <span id="effectNow" class="dim">effect: —</span>
+  </p>
+  <p id="swatches"></p>
+  <p>
+    <input id="hex" placeholder="#ff8800" size="9" disabled>
+    <button id="applyHex" disabled>Apply hex</button>
+  </p>
+
+  <h2>Per-key colour <span class="dim" style="font-weight:normal">— enabled after step 2; writes one slot in the 378-byte planar block (cable-verified)</span></h2>
+  <p class="dim">Only visible on the <em>Custom</em> effect. Slot 0 is Esc; slots run down each column (Esc, `~, Tab, Caps, LShift, LCtrl, then the next column).</p>
+  <p>
+    <button id="effectCustom" disabled>8 · Effect → Custom</button>
+    <input id="slot" type="number" min="0" max="125" value="0" disabled>
+    <input id="keyHex" placeholder="#00ff00" size="9" disabled>
+    <button id="applyKey" disabled>Apply to slot</button>
+  </p>
+  <pre id="log">Idle.</pre>
+  <script type="module" src="/src/smoke/main.ts"></script>
+</body>
+</html>

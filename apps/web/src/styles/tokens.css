@@ -1,0 +1,36 @@
+/*
+ * Design tokens, lifted from docs/design/2026-09-21-status-screen-glass.html (design 1, "Frosted
+ * cards"). Three first-class themes. --cap is the ceiling for the ambient field's opacity: with
+ * the field never drawn above it, body and secondary text stay ≥ 4.5:1 on every card, under any
+ * effect at brightness 4. --text-2 is the most muted tier that may sit on glass.
+ */
+:root {
+  --radius: 12px;
+  --ok: #8fd694;
+  --bad: #ff8a7a;
+}
+:root[data-theme="white"] {
+  --bg: #eceef2; --text: #17191d; --text-2: #4b5160;
+  --accent: #8f4a00; --accent-ink: #fff7ec; --accent-soft: rgba(143, 74, 0, .14);
+  --ok: #1d6a2f; --bad: #a83220;
+  --hair: rgba(23, 25, 29, .14); --edge: rgba(255, 255, 255, .85); --edge-lo: rgba(23, 25, 29, .10); --edge-hi: rgba(255, 255, 255, .95);
+  --shadow: rgba(23, 25, 29, .10);
+  --glass-frost: rgba(255, 255, 255, .60);
+  --cap: .34; --static-a: #f6f7fa; --static-b: #d9dee8; --grain: .05;
+}
+:root[data-theme="dark"] {
+  --bg: #1a1c20; --text: #eceef2; --text-2: #bbc0ca;
+  --accent: #f5b043; --accent-ink: #1a1206; --accent-soft: rgba(245, 176, 67, .16);
+  --hair: rgba(255, 255, 255, .10); --edge: rgba(255, 255, 255, .14); --edge-lo: rgba(255, 255, 255, .06); --edge-hi: rgba(255, 255, 255, .18);
+  --shadow: rgba(0, 0, 0, .35);
+  --glass-frost: rgba(255, 255, 255, .06);
+  --cap: .14; --static-a: #24262c; --static-b: #141518; --grain: .06;
+}
+:root[data-theme="black"] {
+  --bg: #000000; --text: #f2f2f2; --text-2: #b9bcc4;
+  --accent: #f5b043; --accent-ink: #1a1206; --accent-soft: rgba(245, 176, 67, .18);
+  --hair: rgba(255, 255, 255, .12); --edge: rgba(255, 255, 255, .18); --edge-lo: rgba(255, 255, 255, .07); --edge-hi: rgba(255, 255, 255, .26);
+  --shadow: rgba(0, 0, 0, .6);
+  --glass-frost: rgba(255, 255, 255, .05);
+  --cap: .26; --static-a: #0b0b0d; --static-b: #000000; --grain: .08;
+}
