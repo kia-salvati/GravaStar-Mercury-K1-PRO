@@ -24,9 +24,33 @@ export const LIGHT_COLOUR_READ_BYTES = 483
 export const LIGHT_COLOUR_WRITE_BYTES = 512
 const LIGHT_COLOUR_TRAILER_OFFSET = 506
 const OFFSET_EFFECT_RGB = 18
+/** Bytes 0..17 of every light-colour block ever captured, on both connections. */
+const LIGHT_COLOUR_HEADER = [0xff, 0xff, 0xff, 0xff, 0x00, 0x00, 0x00, 0xff, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0x00, 0xff, 0x00, 0xff] as const
 
 export const CUSTOM_COLOUR_BYTES = 378
 export const CUSTOM_SLOTS = 126
+
+/**
+ * Sanity checks a block must pass before it is used as the base of a write or written itself.
+ * A read that fails these is a bad read — stale packets merged on the lossy link, a truncated
+ * reply — and must never be written back.
+ */
+export function assertLightColourBlock(block: Uint8Array): void {
+  if (block.length < LIGHT_COLOUR_READ_BYTES) {
+    throw new Error(`light-colour block is ${block.length} bytes, expected at least ${LIGHT_COLOUR_READ_BYTES}`)
+  }
+  for (let i = 0; i < LIGHT_COLOUR_HEADER.length; i++) {
+    if (block[i] !== LIGHT_COLOUR_HEADER[i]) {
+      throw new Error(`light-colour block header byte ${i} is ${block[i]}, expected ${LIGHT_COLOUR_HEADER[i]} — refusing to trust this read`)
+    }
+  }
+}
+
+export function assertCustomColourBlock(block: Uint8Array): void {
+  if (block.length !== CUSTOM_COLOUR_BYTES) {
+    throw new Error(`custom-colour block is ${block.length} bytes, expected ${CUSTOM_COLOUR_BYTES}`)
+  }
+}
 
 export function effectColour(block: Uint8Array, effectId: number): RGB {
   const offset = effectRgbOffset(block, effectId)

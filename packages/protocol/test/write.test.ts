@@ -12,7 +12,7 @@ import { bytesOf, parseCapture } from '../src/transport/transport.js'
 const CONNECT = readFileSync('test/fixtures/session-1-connect.jsonl', 'utf8')
 const LIGHTING = readFileSync('test/fixtures/session-2-lighting.jsonl', 'utf8')
 const DONGLE = { vendorId: 0x3554, productId: 0xfa09 }
-const FAST = { burstIdleMs: 5, ackTimeoutMs: 5 }
+const FAST = { burstIdleMs: 5, ackTimeoutMs: 5, writeSettleMs: 0 }
 const K1 = modelForUuid(K1_PRO_UUID)!.capabilities.lighting
 const hex = (b: Uint8Array) => [...b].map((x) => x.toString(16).padStart(2, '0')).join(' ')
 
@@ -95,7 +95,7 @@ test('a cable write with the wrong payload size is refused before it becomes a f
 
 test('setLighting over the cable: one write, then a read-back that confirms it', async () => {
   const transport = new MockTransport(WIRED_WRITES)
-  const kb = await K916.connect(transport)
+  const kb = await K916.connect(transport, { writeSettleMs: 0 })
   const before = await kb.readProfileRaw()
 
   const result = await kb.setLighting({ brightness: 3 })
@@ -268,4 +268,78 @@ test('a refused write does not disturb the operation in flight', async () => {
   const inFlight = kb.setLighting({ brightness: 2 })
   await expect(kb.setLighting({ brightness: 20 })).rejects.toBeInstanceOf(KeyboardBusyError)   // busy wins over range
   await expect(inFlight).resolves.toMatchObject({ brightness: 2 })
+})
+
+// ---- strictness added after the cable incident (keyboard lit but not typing) --------------------
+
+test('after a cable write, nothing is sent until the write settle has elapsed', async () => {
+  const transport = new MockTransport(WIRED_WRITES)
+  const kb = await K916.connect(transport, { writeSettleMs: 60 })
+  const original = transport.sendFeatureReport.bind(transport)
+  const times: { op: number; t: number }[] = []
+  transport.sendFeatureReport = async (reportId, data) => {
+    times.push({ op: data[0]!, t: performance.now() })
+    return original(reportId, data)
+  }
+
+  await kb.setLighting({ brightness: 2 })
+
+  const write = times.find((x) => x.op === 0x04)!
+  const after = times.find((x) => x.t > write.t)!
+  expect(after.t - write.t).toBeGreaterThanOrEqual(55)   // the read-back waited for the keyboard to commit
+})
+
+test('a base read with a bad profile trailer is refused — nothing is written on top of it', async () => {
+  const transport = new MockTransport(CAPTURE, DONGLE)
+  const kb = await K916.connect(transport, FAST)
+  const original = transport.sendOutputReport.bind(transport)
+  // Corrupt the simulator's profile so the read comes back without its 5a a5 trailer.
+  transport.sendOutputReport = async (reportId, data) => {
+    if (data[0] === 0x44 && transport.block(0x44)) transport.block(0x44)![126] = 0x00
+    return original(reportId, data)
+  }
+  // Force the simulator path by consuming the captured profile read first.
+  await kb.readProfileRaw()
+
+  await expect(kb.setLighting({ brightness: 2 })).rejects.toThrow(/trailer .* refusing to trust this read/)
+  expect(transport.writes).toHaveLength(0)
+})
+
+test('a transformed block that fails its own check is refused before any frame exists', async () => {
+  const transport = new MockTransport(WIRED_WRITES)
+  const kb = await K916.connect(transport, { writeSettleMs: 0 })
+  const bad = new Uint8Array(128)   // no trailer
+
+  await expect(kb.writeProfile(bad)).rejects.toThrow(/trailer/)
+  expect(transport.writes).toHaveLength(0)
+})
+
+test('over the dongle a write base must read identically twice', async () => {
+  const transport = new MockTransport(CAPTURE, DONGLE)
+  const kb = await K916.connect(transport, FAST)
+  const reads: number[] = []
+  const original = transport.sendOutputReport.bind(transport)
+  transport.sendOutputReport = async (reportId, data) => {
+    if (data[0] === 0x44) reads.push(1)
+    return original(reportId, data)
+  }
+
+  await kb.setLighting({ brightness: 2 })
+
+  // two trusted base reads (+ any lossy retries) and at least one read-back
+  expect(reads.length).toBeGreaterThanOrEqual(3)
+})
+
+test('over the cable a single passing read is trusted', async () => {
+  const transport = new MockTransport(WIRED_WRITES)
+  const kb = await K916.connect(transport, { writeSettleMs: 0 })
+  const reads: number[] = []
+  const original = transport.sendFeatureReport.bind(transport)
+  transport.sendFeatureReport = async (reportId, data) => {
+    if (data[0] === 0x84) reads.push(1)
+    return original(reportId, data)
+  }
+
+  await kb.setLighting({ brightness: 2 })
+  expect(reads).toHaveLength(2)   // one base read, one read-back
 })

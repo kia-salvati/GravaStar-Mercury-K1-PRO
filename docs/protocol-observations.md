@@ -9,6 +9,31 @@ code rather than filled in with a plausible value.
 
 ---
 
+## Incident — cable colour writes left the keyboard lit but not typing (2026-09-21) — *hardware*
+
+Symptoms: after several colour writes over the cable through our smoke page, the keyboard stopped
+accepting keystrokes while still powered and lit. Factory reset over the dongle did nothing; over
+the cable it recovered the board. Afterwards only two keys were lit and effect-colour changes did
+not apply — that is the **Custom effect** being active (per-key block, two keys coloured), most
+likely restored from a backup taken while on Custom, not corruption.
+
+Cause, from the captures: **timing**. The vendor app never follows a write within ~300 ms
+(cable: write → next request min 306 ms, median 1.4 s; write → write min 476 ms). Ours sent the
+read-back ~1 ms after the write and `restore()` sent three block writes ~10 ms apart. The keyboard
+commits each block to flash and stalls while it does; requests arriving mid-commit wedged the
+input path. The dongle's echo handshake had accidentally paced us; the cable has no ack, so
+nothing did.
+
+Fixes in `K916`:
+- **`writeSettleMs` (default 500)**: nothing is sent for this long after any write.
+- **Block sanity checks** before any write: the base read and the transformed block must pass
+  (`assertProfileBlock`: 128 bytes + `5a a5` trailer; `assertLightColourBlock`: ≥ 483 bytes +
+  the constant 18-byte header; `assertCustomColourBlock`: exactly 378). A bad read never becomes
+  a write.
+- **Two matching reads on the dongle** before a write's base is trusted (a third breaks a tie);
+  the lossy link can merge stale and fresh packets into a block the keyboard never held.
+- `backup()` uses the same trusted reads; `writeProfile()` validates its input.
+
 ## Capture session 6 — colour, cable, 2026-09-21 — *capture*
 
 Fixture: `packages/protocol/test/fixtures/session-6-colour.jsonl` (151 frames). Eight swatch

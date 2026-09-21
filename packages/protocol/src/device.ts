@@ -1,7 +1,7 @@
 import { decodeIdentity } from './codec/identity.js'
 import { decodeKeymap, Layer, type KeyBinding } from './codec/keymap.js'
-import { decodeKeyColours, effectColour, keyColour, lightColourWriteBlock, withEffectColour, withKeyColour, type RGB } from './codec/colour.js'
-import { applyLighting, decodeLighting, type LightingChange, type LightingState } from './codec/lighting.js'
+import { assertCustomColourBlock, assertLightColourBlock, decodeKeyColours, effectColour, keyColour, lightColourWriteBlock, withEffectColour, withKeyColour, type RGB } from './codec/colour.js'
+import { applyLighting, assertProfileBlock, decodeLighting, type LightingChange, type LightingState } from './codec/lighting.js'
 import { applySleep, decodeSleep, type SleepTimer } from './codec/sleep.js'
 import { decodePower, isPowerPacket, type PowerState } from './codec/power.js'
 import { Command, missingIndices, reassemble, WriteCommand, type Dialect, type ReplyPacket, type RequestArgs } from './dialect/dialect.js'
@@ -12,6 +12,20 @@ import type { Transport } from './transport/transport.js'
 
 /** How many times a read-back is retried before a mismatch is believed. */
 const READ_BACK_ATTEMPTS = 3
+
+/** The blocks a write can target. Everything else is read-only. */
+type WritableBlock = Command.Profile | Command.LightColor | Command.CustomColor
+
+/** The sanity check each writable block must pass, both as read and as transformed. */
+const BLOCK_CHECKS: Record<WritableBlock, (block: Uint8Array) => void> = {
+  [Command.Profile]: assertProfileBlock,
+  [Command.LightColor]: assertLightColourBlock,
+  [Command.CustomColor]: assertCustomColourBlock,
+}
+
+function same(a: Uint8Array, b: Uint8Array): boolean {
+  return a.length === b.length && a.every((byte, i) => byte === b[i])
+}
 /** Reads may queue behind an operation in flight, but never more than this many. */
 const MAX_QUEUED_READS = 8
 
@@ -62,6 +76,12 @@ export interface ConnectOptions {
    * stale packets from earlier exchanges late, and a fresh request must not inherit them.
    */
   settleMs?: number
+  /**
+   * After every write, send nothing for this long. The keyboard commits each block to flash and
+   * the MCU stalls while it does; the vendor app never follows a write within ~300 ms, and
+   * following one within a millisecond left the keyboard lit but not typing.
+   */
+  writeSettleMs?: number
   /** A frame that arrived but failed to parse. Never thrown — a listener has nowhere to throw to. */
   onFrameError?: (error: Error) => void
 }
@@ -96,6 +116,7 @@ export class K916 {
   readonly #maxAttempts: number
   readonly #ackTimeoutMs: number
   readonly #settleMs: number
+  readonly #writeSettleMs: number
   readonly #onFrameError: (error: Error) => void
   /** Operations run one at a time: two overlapping exchanges on one link steal each other's packets. */
   #queue: Promise<unknown> = Promise.resolve()
@@ -116,6 +137,7 @@ export class K916 {
     this.#maxAttempts = options.maxAttempts ?? 6
     this.#ackTimeoutMs = options.ackTimeoutMs ?? 150
     this.#settleMs = options.settleMs ?? 40
+    this.#writeSettleMs = options.writeSettleMs ?? 500
     this.#onFrameError = options.onFrameError ?? ((error) => console.warn('[k916] unparseable frame:', error.message))
     this.#unsubscribeAmbient = transport.onInputReport((reportId, data) => this.#onAmbientFrame(reportId, data))
   }
@@ -242,10 +264,11 @@ export class K916 {
    * are separate, and the vendor app writes each on its own.
    */
   backup(): Promise<Backup> {
+    // A backup is a future write; every block must pass the same trust as a write's base.
     return this.#exclusive(async () => ({
-      profile: await this.#read(Command.Profile),
-      lightColour: await this.#read(Command.LightColor),
-      customColour: await this.#read(Command.CustomColor),
+      profile: await this.#readTrusted(Command.Profile),
+      lightColour: await this.#readTrusted(Command.LightColor),
+      customColour: await this.#readTrusted(Command.CustomColor),
     }))
   }
 
@@ -260,7 +283,10 @@ export class K916 {
 
   /** Writes a complete 128-byte profile verbatim. Prefer `restore()` for a full backup. */
   writeProfile(profile: Uint8Array): Promise<void> {
-    return this.#exclusiveWrite('writeProfile', () => this.#write(WriteCommand.Profile, profile))
+    return this.#exclusiveWrite('writeProfile', async () => {
+      assertProfileBlock(profile)
+      await this.#write(WriteCommand.Profile, profile)
+    })
   }
 
   /** Raw payloads whose layout is not decoded yet. Kept raw rather than guessed. */
@@ -310,16 +336,19 @@ export class K916 {
   }
 
   /**
-   * Read a block, transform it, write it, read it again, and confirm every byte we sent came
-   * back. The comparison covers the bytes the read returns; a write may legitimately be longer
-   * than its read (the light-colour block is 512 out, 483 back).
+   * Read a block, transform it, write it, wait for the keyboard to commit, read it again, and
+   * confirm every byte we sent came back. The comparison covers the bytes the read returns; a
+   * write may legitimately be longer than its read (the light-colour block is 512 out, 483 back).
    *
-   * A mismatch is re-read before it is believed: on the 2.4G link, packets from the pre-write
-   * read can arrive late and merge into the read-back with stale bytes.
+   * Strictness, in order: the base read must pass the block's sanity check (and on the dongle
+   * must read identically twice — the lossy link can merge stale and fresh packets into a block
+   * the keyboard never held); the transformed block must pass it too; only then is a frame
+   * built. A mismatched read-back is re-read before it is believed.
    */
-  async #modify(read: Command, write: WriteCommand, transform: (current: Uint8Array) => Uint8Array): Promise<Uint8Array> {
-    const current = await this.#read(read)
+  async #modify(read: WritableBlock, write: WriteCommand, transform: (current: Uint8Array) => Uint8Array): Promise<Uint8Array> {
+    const current = await this.#readTrusted(read)
     const next = transform(current)
+    BLOCK_CHECKS[read](next.subarray(0, current.length))
     await this.#write(write, next)
 
     let mismatch = -1
@@ -330,6 +359,27 @@ export class K916 {
       if (mismatch === -1) return readBack
     }
     throw new Error(`${write} not retained: byte ${mismatch} is ${readBack[mismatch]}, sent ${next[mismatch]}`)
+  }
+
+  /**
+   * A read that may become the base of a write. It must pass the block's sanity check, and over
+   * the dongle it must come back identical twice; a third read breaks a tie. Otherwise the read
+   * is refused — better no write than a write of a block that was never real.
+   */
+  async #readTrusted(command: WritableBlock): Promise<Uint8Array> {
+    const check = BLOCK_CHECKS[command]
+    const first = await this.#read(command)
+    check(first)
+    if (this.#dialect.channel === 'feature') return first
+
+    const second = await this.#read(command)
+    check(second)
+    if (same(first, second)) return first
+
+    const third = await this.#read(command)
+    check(third)
+    if (same(third, first) || same(third, second)) return third
+    throw new Error(`${command}: three consecutive reads disagree; refusing to write on top of an unstable read`)
   }
 
   close(): void {
@@ -433,6 +483,7 @@ export class K916 {
     const frames = this.#dialect.writeFrames(command, payload)
     if (this.#dialect.channel === 'feature') {
       for (const frame of frames) await this.#transport.sendFeatureReport(this.#dialect.reportId, frame)
+      await this.#afterWrite()
       return
     }
 
@@ -440,9 +491,17 @@ export class K916 {
     for (let attempt = 1; attempt <= this.#maxAttempts; attempt++) {
       await this.#settle()
       await this.#sendBurstAndCollectAcks(pending)
-      if (pending.size === 0) return
+      if (pending.size === 0) {
+        await this.#afterWrite()
+        return
+      }
     }
     throw new Error(`${command}: packet(s) ${[...pending.keys()].join(', ')} not acknowledged after ${this.#maxAttempts} attempt(s)`)
+  }
+
+  /** The keyboard commits to flash after a write. Nothing is sent until it has had time to. */
+  #afterWrite(): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, this.#writeSettleMs))
   }
 
   /** Sends every pending frame, then removes each one whose echo arrives before the link goes quiet. */

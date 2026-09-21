@@ -55,7 +55,7 @@ test('refuses values outside the vendor range or off the half-minute grid', () =
 
 test('setSleepTimer over the dongle writes and reads back', async () => {
   const transport = new MockTransport(DONGLE_COLOUR, { vendorId: 0x3554, productId: 0xfa09 })
-  const kb = await K916.connect(transport, { burstIdleMs: 5, ackTimeoutMs: 5, timeoutMs: 20 })
+  const kb = await K916.connect(transport, { burstIdleMs: 5, ackTimeoutMs: 5, timeoutMs: 20, writeSettleMs: 0 })
 
   await expect(kb.setSleepTimer(9.5)).resolves.toEqual({ enabled: true, minutes: 9.5 })
   await expect(kb.setSleepTimer(null)).resolves.toEqual({ enabled: false, minutes: 0 })

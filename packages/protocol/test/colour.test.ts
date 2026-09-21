@@ -127,7 +127,7 @@ test('hex round-trips', () => {
 
 test('setEffectColour writes the block, reads it back and returns the colour the keyboard holds', async () => {
   const transport = new MockTransport(COLOUR)
-  const kb = await K916.connect(transport)
+  const kb = await K916.connect(transport, { writeSettleMs: 0 })
 
   const result = await kb.setEffectColour({ r: 0x12, g: 0x34, b: 0x56 }, 1)
 
@@ -139,7 +139,7 @@ test('setEffectColour writes the block, reads it back and returns the colour the
 
 test('setKeyColour writes the planar block and reads it back', async () => {
   const transport = new MockTransport(COLOUR)
-  const kb = await K916.connect(transport)
+  const kb = await K916.connect(transport, { writeSettleMs: 0 })
 
   await expect(kb.setKeyColour(35, { r: 9, g: 8, b: 7 })).resolves.toEqual({ r: 9, g: 8, b: 7 })
   expect(transport.writes[0]![0]).toBe(0x06)
@@ -147,14 +147,14 @@ test('setKeyColour writes the planar block and reads it back', async () => {
 })
 
 test('readEffectColour defaults to the current effect', async () => {
-  const kb = await K916.connect(new MockTransport(COLOUR))
+  const kb = await K916.connect(new MockTransport(COLOUR), { writeSettleMs: 0 })
   const lighting = await kb.readLighting()
   expect(await kb.readEffectColour()).toEqual(await kb.readEffectColour(lighting.effectId))
 })
 
 test('backup covers all three blocks and restore puts every one of them back', async () => {
   const transport = new MockTransport(COLOUR)
-  const kb = await K916.connect(transport)
+  const kb = await K916.connect(transport, { writeSettleMs: 0 })
   const backup = await kb.backup()
   expect(backup.profile).toHaveLength(128)
   expect(backup.lightColour).toHaveLength(483)
@@ -225,7 +225,7 @@ test('setEffectColour and setKeyColour work over the dongle on the simulator', a
   const transport = new MockTransport(DONGLE_COLOUR, DONGLE)
   // The capture's first two 0x49 requests are followed only by stale 0x42 packets from an
   // earlier read — the real link interleaves — so this exercises the silent-attempt retry.
-  const kb = await K916.connect(transport, { burstIdleMs: 5, ackTimeoutMs: 5, timeoutMs: 20 })
+  const kb = await K916.connect(transport, { burstIdleMs: 5, ackTimeoutMs: 5, timeoutMs: 20, writeSettleMs: 0 })
 
   await expect(kb.setEffectColour({ r: 0x12, g: 0x34, b: 0x56 }, 1)).resolves.toEqual({ r: 0x12, g: 0x34, b: 0x56 })
   await expect(kb.setKeyColour(35, { r: 9, g: 8, b: 7 })).resolves.toEqual({ r: 9, g: 8, b: 7 })

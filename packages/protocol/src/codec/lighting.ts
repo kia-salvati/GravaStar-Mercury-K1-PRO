@@ -54,6 +54,20 @@ const EFFECT_BY_ID = new Map(EFFECTS.map((effect) => [effect.id, effect]))
 
 export const PROFILE_BYTES = 128
 const OFFSET_EFFECT_ID = 9
+const PROFILE_TRAILER = [0x5a, 0xa5] as const
+
+/**
+ * A profile must be exactly 128 bytes and end in the trailer every captured profile ends in.
+ * Anything else is a bad read and must never be the base of a write.
+ */
+export function assertProfileBlock(profile: Uint8Array): void {
+  if (profile.length !== PROFILE_BYTES) {
+    throw new Error(`profile is ${profile.length} bytes, expected ${PROFILE_BYTES}`)
+  }
+  if (profile[126] !== PROFILE_TRAILER[0] || profile[127] !== PROFILE_TRAILER[1]) {
+    throw new Error(`profile trailer is ${profile[126]} ${profile[127]}, expected 5a a5 — refusing to trust this read`)
+  }
+}
 const OFFSET_PAIRS = 56
 const UNPAIRED_EFFECT_IDS = new Set([0, 19, 277])
 
