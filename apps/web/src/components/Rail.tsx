@@ -2,7 +2,8 @@ import type { FC, ReactNode } from 'react'
 import type { PowerState } from 'k916'
 import { ROUTE_LABELS, ROUTES, type Route } from '../config/routes'
 import type { KeyboardState } from '../types/keyboard'
-import { colourKind, swatchHex } from '../utils/colour'
+import { colourKind } from '../utils/colour'
+import { lookOfKeyboard } from '../utils/look'
 import { powerLabel } from '../utils/power'
 import BatteryGlyph from './BatteryGlyph'
 import { DeviceIcon, KeysIcon, LightingIcon, MacrosIcon, PlugIcon, RadioIcon, SettingsIcon } from './icons'
@@ -33,12 +34,13 @@ const glanceOf = (keyboard: KeyboardState): Glance[] => {
       { key: 'effect', icon: <span className="swatch none" />, short: '—', long: 'No lighting reading' },
     ]
   }
-  const { info, power, reportsBattery, lighting, effectColour } = keyboard
+  const { info, power, reportsBattery, lighting } = keyboard
+  const look = lookOfKeyboard(keyboard)
   const wireless = info.connection === 'wireless'
   return [
     { key: 'connection', icon: wireless ? <RadioIcon /> : <PlugIcon />, short: wireless ? '2.4G' : 'Wired', long: wireless ? '2.4G wireless' : 'Wired' },
     { key: 'battery', icon: <BatteryGlyph power={power} />, short: power ? `${power.percent}%` : 'n/a', long: batteryLong(power, reportsBattery) },
-    { key: 'effect', icon: <Swatch kind={colourKind(lighting)} hex={swatchHex(lighting, effectColour)} />, short: lighting.effect.split(' ')[0] ?? lighting.effect, long: lighting.effect },
+    { key: 'effect', icon: <Swatch kind={colourKind(look)} hex={look.colourHex} />, short: lighting.effect.split(' ')[0] ?? lighting.effect, long: lighting.effect },
   ]
 }
 

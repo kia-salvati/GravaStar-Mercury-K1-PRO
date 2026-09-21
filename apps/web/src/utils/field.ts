@@ -2,6 +2,8 @@ import type { ColourMode } from 'k916'
 
 /** How the ambient field moves for an effect. Each value is an `fx-*` class in app.css. */
 type FieldMotion = 'off' | 'solid' | 'reactive' | 'wave' | 'sine' | 'stars' | 'rainbow' | 'windmill' | 'waterfall' | 'bloom' | 'custom'
+/** The layers the field keeps mounted; `off` shows none of them. */
+export const FIELD_LAYERS: readonly Exclude<FieldMotion, 'off'>[] = ['solid', 'reactive', 'wave', 'sine', 'stars', 'rainbow', 'windmill', 'waterfall', 'bloom', 'custom']
 
 const MOTION_BY_EFFECT: Readonly<Record<string, FieldMotion>> = {
   'Off': 'off',

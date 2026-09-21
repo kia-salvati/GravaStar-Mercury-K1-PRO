@@ -42,6 +42,8 @@ export type DeserialiseResult = { ok: true; file: PresetsFile } | { ok: false; r
 
 export const storageKey = (keyboardUuid: string): string => `k1.presets.${keyboardUuid}`
 
+export const formatSavedAt = (iso: string): string => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+
 /** Inverse of k916's `toHex` ("1a 2b …"). */
 export function hexToBytes(hex: string): Uint8Array {
   const trimmed = hex.trim()

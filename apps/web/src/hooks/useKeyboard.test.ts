@@ -46,6 +46,7 @@ test('over the dongle: reconnects on load, reports battery and decodes Windmill'
 
   expect(state.info).toMatchObject({ productName: 'GravaStar Mercury K1 PRO', firmwareVersion: '0x1707', connection: 'wireless' })
   expect(state.reportsBattery).toBe(true)
+  expect(state.canWrite).toBe(false)
   expect(state.power).toEqual({ percent: 100, charging: false, full: true })
   expect(state.lighting).toMatchObject({ effect: 'Windmill', colourMode: 'mixed', brightness: 1, speed: 0, mixing: true })
   expect(state.effectColour).toEqual({ r: 255, g: 255, b: 255 })
@@ -57,6 +58,7 @@ test('over the cable: battery is not reported and the board was on Blooming', as
 
   expect(state.info.connection).toBe('wired')
   expect(state.reportsBattery).toBe(false)
+  expect(state.canWrite).toBe(true)
   expect(state.power).toBeNull()
   expect(state.lighting).toMatchObject({ effect: 'Blooming', colourMode: 'mixed', mixing: true })
   expect(state.effectColour).toEqual({ r: 0, g: 255, b: 0 })
@@ -85,8 +87,16 @@ test('busy is true for the whole of a read and false once it has answered', asyn
   expect(result.current.busy).toBe(false)
 })
 
-test('a write while a read is in flight is refused as a notice: nothing is sent and nothing fails', async () => {
-  const { result } = await connected(sourceOf(new MockTransport(DONGLE_CAPTURE_TWICE, DONGLE)).source)
+test('on cable, a write while a read is in flight is refused as a notice: nothing is sent and nothing fails', async () => {
+  // The cable allows writes, so the refusal here is the busy check alone. Its replies are held
+  // back a little, or the refresh would be over before the refusal could be seen.
+  const transport = new MockTransport(COLOUR_CAPTURE)
+  const receive = transport.receiveFeatureReport.bind(transport)
+  transport.receiveFeatureReport = async (reportId) => {
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    return receive(reportId)
+  }
+  const { result } = await connected(sourceOf(transport).source)
   const before = result.current as Connected
 
   let refreshing: Promise<void> = Promise.resolve()
@@ -96,11 +106,23 @@ test('a write while a read is in flight is refused as a notice: nothing is sent 
   })
   expect(result.current.notice).toMatch(/Sleep timer change was not sent — the keyboard is still busy/)
 
-  // The capture holds no write frames, so had anything been sent the mock would have thrown
-  // and the notice would be a failure instead; the refresh completing cleanly proves the same.
   await act(() => refreshing)
-  expect(result.current).toMatchObject({ status: 'connected', lighting: before.lighting, sleepTimer: before.sleepTimer })
+  expect(transport.writes).toHaveLength(0)
+  expect(result.current).toMatchObject({ status: 'connected', lighting: before.lighting })
   expect(result.current.notice).toBeNull()
+})
+
+test('over the dongle, a write is refused as the disabled notice — not busy, not a failure', async () => {
+  const transport = new MockTransport(DONGLE_CAPTURE, DONGLE)
+  const { result } = await connected(sourceOf(transport).source)
+
+  await act(async () => {
+    await result.current.setSleepTimer(5)
+  })
+
+  expect(result.current.notice).toBe('Sleep timer change was not sent — writes are disabled over 2.4G. Connect the cable.')
+  expect(transport.writes).toHaveLength(0)
+  expect(result.current.status).toBe('connected')
 })
 
 test('session 6: a single-colour effect reads its own stored colour, with the mixing flag as the firmware has it', async () => {

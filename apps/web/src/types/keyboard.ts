@@ -12,6 +12,8 @@ export interface Connected {
   info: DeviceInfo
   capabilities: Capabilities
   reportsBattery: boolean
+  /** False on the dongle: the library refuses every write there, so the screens say so up front. */
+  canWrite: boolean
   /** Null until the first power packet lands, and always null on cable. */
   power: PowerState | null
   lighting: LightingState

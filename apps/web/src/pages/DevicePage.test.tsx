@@ -28,6 +28,7 @@ const onCable: Keyboard = {
   info: { uuid: '0x030000000197', productName: 'GravaStar Mercury K1 PRO', firmwareVersion: '0x1707', connection: 'wired' },
   capabilities: K1_PRO,
   reportsBattery: false,
+  canWrite: true,
   power: null,
   lighting: { effectId: 17, effect: 'Blooming', colourMode: 'mixed', brightness: 2, speed: 1, mixing: true },
   effectColour: { r: 0, g: 255, b: 0 },
@@ -68,7 +69,7 @@ test('a single-colour effect with mixing on reads as mixed and hides its colour'
 test('Custom is per-key and has no colour slot to show', () => {
   render(<DevicePage keyboard={withLighting({ effectId: 277, effect: 'Custom', colourMode: 'perKey', brightness: 0, speed: 0, mixing: false }, null)} />)
 
-  expect(screen.getByText('Per-key RGB — set per key in Lighting')).toBeTruthy()
+  expect(screen.getByText('Per-key RGB · 126 keys')).toBeTruthy()
 })
 
 const onDongle = (sleepTimer: SleepTimer): Keyboard => ({ ...onCable, info: { ...onCable.info, connection: 'wireless' }, reportsBattery: true, power: { percent: 100, charging: false, full: true }, sleepTimer })

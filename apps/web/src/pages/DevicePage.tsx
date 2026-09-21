@@ -4,16 +4,11 @@ import ConnectPanel from '../components/ConnectPanel'
 import Steps from '../components/Steps'
 import Swatch from '../components/Swatch'
 import type { Connected, Keyboard } from '../types/keyboard'
-import { colourKind, swatchHex, type ColourKind } from '../utils/colour'
+import { colourKind } from '../utils/colour'
 import { fieldMotion, isAnimated } from '../utils/field'
+import { colourLabel, lookOfKeyboard } from '../utils/look'
 import { powerLabel } from '../utils/power'
 import { sleepLabel } from '../utils/sleep'
-
-const COLOUR_NOTE: Record<Exclude<ColourKind, 'single'>, string> = {
-  none: 'Lighting is off',
-  mixed: 'Mixed colours — set by the effect',
-  perKey: 'Per-key RGB — set per key in Lighting',
-}
 
 function PowerNote({ power, reportsBattery }: Pick<Connected, 'power' | 'reportsBattery'>) {
   if (!reportsBattery) {
@@ -34,13 +29,12 @@ const powerSub = (power: PowerState | null, wireless: boolean): string => {
 }
 
 function ColourValue({ lighting, effectColour }: Pick<Connected, 'lighting' | 'effectColour'>) {
-  const kind = colourKind(lighting)
-  const hex = swatchHex(lighting, effectColour)
+  const look = lookOfKeyboard({ lighting, effectColour })
+  const kind = colourKind(look)
   return (
     <>
-      <Swatch kind={kind} hex={hex} />
-      {kind !== 'single' && <span className="dim">{COLOUR_NOTE[kind]}</span>}
-      {kind === 'single' && (hex ? <span className="mono">{hex}</span> : <span className="dim">Colour not read</span>)}
+      <Swatch kind={kind} hex={look.colourHex} />
+      {kind === 'single' && look.colourHex ? <span className="mono">{look.colourHex}</span> : <span className="dim">{colourLabel(look)}</span>}
     </>
   )
 }

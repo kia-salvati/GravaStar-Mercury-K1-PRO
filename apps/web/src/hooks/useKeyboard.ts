@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { K916, KeyboardBusyError, type Backup, type LightingChange, type RestoreStep, type RGB, type Transport } from 'k916'
+import { K916, KeyboardBusyError, WritesDisabledError, type Backup, type LightingChange, type RestoreStep, type RGB, type Transport } from 'k916'
 import type { DeviceSource } from '../api/hidSource'
 import type { Connected, Keyboard, KeyboardState } from '../types/keyboard'
 
@@ -40,17 +40,24 @@ export function useKeyboard(source: DeviceSource): Keyboard {
   const device = useRef<K916 | null>(null)
 
   /**
-   * The library refuses a write while anything is in flight and sends nothing. That is expected
-   * — the user's next click goes through — so it becomes a notice, never an error.
+   * The library refuses a write while anything is in flight, and every write over the dongle,
+   * and sends nothing either way. Both are expected states — the screens disable the control
+   * first — so they become a notice, never an error.
    */
   const run = useCallback(async <T>(name: string, operation: () => Promise<T>): Promise<T | undefined> => {
     setPending((count) => count + 1)
     try {
       return await operation()
     } catch (error) {
-      if (!(error instanceof KeyboardBusyError)) throw error
-      setState((current) => ({ ...current, notice: `${name} was not sent — the keyboard is still busy. Try again in a moment.` }))
-      return undefined
+      if (error instanceof KeyboardBusyError) {
+        setState((current) => ({ ...current, notice: `${name} was not sent — the keyboard is still busy. Try again in a moment.` }))
+        return undefined
+      }
+      if (error instanceof WritesDisabledError) {
+        setState((current) => ({ ...current, notice: `${name} was not sent — writes are disabled over 2.4G. Connect the cable.` }))
+        return undefined
+      }
+      throw error
     } finally {
       setPending((count) => count - 1)
     }
@@ -72,7 +79,7 @@ export function useKeyboard(source: DeviceSource): Keyboard {
           kb.subscribePower((power) => setState((current) => (current.status === 'connected' ? { ...current, power } : current)))
           const readings = await readReadings(kb)
           // The dongle pushes its power packet right after identity, so by now it has usually landed.
-          setState({ status: 'connected', info: kb.info, capabilities: kb.capabilities, reportsBattery: kb.reportsBattery, power: kb.lastPower ?? null, ...readings, notice: null })
+          setState({ status: 'connected', info: kb.info, capabilities: kb.capabilities, reportsBattery: kb.reportsBattery, canWrite: kb.canWrite, power: kb.lastPower ?? null, ...readings, notice: null })
         })
       } catch (error) {
         console.error('[keyboard] connect failed', error)
